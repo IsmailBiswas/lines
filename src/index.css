@@ -23,6 +23,7 @@
     --border: 0 0% 86%;
     --input: 0 0% 86%;
     --ring: 0 0% 20%;
+    --editor: 0 0% 100%;
     --radius: 0.375rem;
   }
 
@@ -39,4 +40,18 @@
   body {
     @apply bg-background text-foreground antialiased text-sm;
   }
+}
+
+.html-editor,
+.html-editor .cm-theme,
+.html-editor .cm-editor {
+  height: 100%;
+}
+
+.html-editor .cm-editor {
+  outline: none;
+}
+
+.html-editor .cm-scroller {
+  overflow: auto;
 }

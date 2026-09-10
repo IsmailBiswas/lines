@@ -15,7 +15,9 @@ function ResizableHandle({ className, ...props }: ComponentProps<typeof Separato
   return (
     <Separator
       className={cn(
-        "bg-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        "relative w-2 shrink-0 self-stretch bg-transparent after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        "aria-[orientation=horizontal]:h-2 aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:self-auto",
+        "aria-[orientation=horizontal]:after:inset-x-0 aria-[orientation=horizontal]:after:top-1/2 aria-[orientation=horizontal]:after:h-px aria-[orientation=horizontal]:after:w-auto aria-[orientation=horizontal]:after:-translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2",
         className,
       )}
       {...props}

@@ -344,7 +344,7 @@ pub fn export_pdf(
     name_pattern: Option<String>,
     set_default: bool,
 ) -> AppResult<String> {
-    pdf_service::write_pdf(&html, PathBuf::from(&dest).as_path())?;
+    pdf_service::export_html(&app, &html, PathBuf::from(&dest).as_path())?;
     if set_default {
         let data = app_data(&app)?;
         let catalog = catalog::load_catalog(&data)?;

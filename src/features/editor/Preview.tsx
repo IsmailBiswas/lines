@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Icons } from "@/lib/icons";
 
+/** Keep in sync with `src-tauri/src/pdf_service.rs` PAGE_WIDTH_PX. */
 const PAGE_WIDTH = 794;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;

@@ -8,7 +8,7 @@ Read `docs/project-initiation.md` and `docs/version-model.md` before the first c
 
 - The user does not lose work.
 - The sidebar, the tabs, and the split view always agree.
-- The interface stays compact, monochrome, and quiet.
+- The interface stays compact and quiet. Light and dark themes are both first-class. Syntax color is only in the HTML editor.
 - The workspace on disk stays a real Git repository.
 - A change is finished only when the matching document still describes the product.
 
@@ -35,7 +35,7 @@ Pretty code that drifts from the documents is not a good change.
 - Write happens on save (named), on switch (version, variant, or user), and on quit. Failed write blocks the switch or quit.
 - Search is variant-name search in v1.
 - The stack is Tauri: web UI in front, Rust for files, Git, and export.
-- UI uses the shared component set and a monochrome theme. Controls stay compact. Spacing follows an 8-point grid. The main work area follows a 12-column layout.
+- UI uses the shared component set. Chrome tokens live in `src/theme/chrome.ts`. Editor highlight tokens live in `src/theme/editor.ts`. Controls stay compact. Spacing follows an 8-point grid. The main work area follows a 12-column layout.
 - Icons come from Lucide only. Use an icon on every action and document kind that has a clear meaning. Same action, same icon. Do not use Git-branded icons in the main UI. See `docs/technical-implementation.md`.
 
 ## Interface discipline

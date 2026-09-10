@@ -12,9 +12,11 @@ The goal is a Tauri desktop app: a web UI in front, Rust behind it for files, Gi
 | --- | --- | --- |
 | Shell | Tauri 2 | Desktop window, file dialogs, close hooks, talking to Rust |
 | Frontend | React, TypeScript, Vite | Fits the shared component set |
-| UI kit | shadcn, Tailwind | Compact monochrome controls |
+| UI kit | shadcn, Tailwind | Compact controls. Light and dark tokens in `src/theme/` |
+| HTML editor | CodeMirror 6 | HTML highlighting that follows the open theme |
 | Icons | Lucide | The icon set that matches shadcn. Use it for actions and kinds whenever a control has a clear meaning |
-| Backend | Rust | Files, Git, PDF export, user catalog |
+| Backend | Rust | Files, Git, rendering the PDF, user catalog |
+| PDF | Same page engine as the preview | WebKit lays out the open document, then writes a real PDF. Not a canvas snapshot and not tag-stripped text |
 | Git | libgit2 through the `git2` crate | Real repositories without depending on a Git install |
 | HTML in a user | Files on disk in that repository | Git is the record |
 
@@ -53,6 +55,7 @@ src/                         Frontend
   features/document/         Tabs, add cover letter, add additional
   features/editor/           HTML text and preview
   features/export/           PDF modal
+  theme/                     Light and dark chrome tokens, editor palettes, switch
   lib/icons.ts               One place that names Lucide icons for this app
 src-tauri/                   Rust
   src/catalog.rs             Known users and last place
@@ -60,7 +63,7 @@ src-tauri/                   Rust
   src/user_service.rs        Create, import, switch, export a user
   src/write_service.rs       Create Unsaved or amend Unsaved
   src/document_service.rs    Read and write HTML files
-  src/pdf_service.rs         Write a PDF
+  src/pdf_service.rs         Render the open document with the preview's page engine, then write the PDF
   src/commands.rs            What the frontend is allowed to call
 ```
 
@@ -182,7 +185,7 @@ The frontend does not invent empty tabs for missing files.
 Treat imported HTML as untrusted.
 
 - Show preview in an isolated frame that cannot reach the app or other files.
-- PDF export prints the open document's HTML, not a screenshot of the whole window.
+- PDF export loads the open document's HTML in a hidden system web view, at the same page width as the preview (794 CSS px). Content JavaScript is off. The PDF is taken from that laid-out page, so type, spacing, and icons come from the same engine the preview uses. It does not dump HTML or CSS as text, snapshot the page to a canvas, or capture the app chrome.
 - Ask for folder and file name first. Use the current user's stored defaults when they exist, otherwise Downloads and the document name.
 
 ### 8. Commands the UI may call
@@ -229,7 +232,7 @@ When the person types, mark dirty and update preview. Creating the Draft row can
 
 ### Dialogs
 
-Keep them short and reuse the same shells:
+Keep them short and reuse the same shells. A text field submits the primary action on Enter.
 
 - First run: user name, then create or import a variant
 - Create user
@@ -242,7 +245,9 @@ Keep them short and reuse the same shells:
 
 ### Editor
 
-A plain HTML text surface is enough for v1. Do not add a formatting toolbar. Preview updates as they type. The preview iframe is sandboxed (no scripts). Same-origin is allowed only so the pane can measure the page and fit or zoom it. The preview fills its pane with no inner card or padding.
+The HTML editor is CodeMirror 6. Highlighting follows the open theme. Do not add a formatting toolbar. Preview updates as they type. The preview iframe is sandboxed (no scripts). Same-origin is allowed only so the pane can measure the page and fit or zoom it. The preview fills its pane with no inner card or padding. The preview is the user's page, not a restyle of it.
+
+Theme switch is a header control. It writes `light` or `dark` on this machine and applies tokens from `src/theme/chrome.ts` and `src/theme/editor.ts`. First open follows the system theme if nothing is stored yet.
 
 ## Icons
 
@@ -272,6 +277,8 @@ Use the same icon for the same action everywhere.
 | Preview zoom in | `ZoomIn` | Zoom in |
 | Preview zoom out | `ZoomOut` | Zoom out |
 | Preview fit | `Maximize` | Fit |
+| Use light theme | `Sun` | Light |
+| Use dark theme | `Moon` | Dark |
 | Resume tab | `FileText` | Resume |
 | Cover letter tab | `Mail` | Cover letter |
 | Additional document tab | `File` | Document name |

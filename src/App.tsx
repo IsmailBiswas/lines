@@ -16,6 +16,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SplitEditor } from "@/features/editor/SplitEditor";
+import { ThemeToggle } from "@/theme";
 import { UserSwitcher } from "@/features/user/UserSwitcher";
 import { buildVersionRows, VersionList } from "@/features/version/VersionList";
 import { api } from "@/lib/api";
@@ -380,11 +381,15 @@ export default function App() {
   }
 
   async function handleExportPdf() {
+    if (!currentDocument?.content) {
+      setError("There is no document to export.");
+      return;
+    }
     const dest = `${pdfFolder.replace(/\/$/, "")}/${pdfName}`;
     setBusy(true);
     setError(null);
     try {
-      await api.exportPdf(currentDocument?.content ?? "", dest, pdfFolder, pdfName, setPdfDefault);
+      await api.exportPdf(currentDocument.content, dest, pdfFolder, pdfName, setPdfDefault);
       setDialog(null);
     } catch (cause) {
       setError(String(cause));
@@ -538,6 +543,7 @@ export default function App() {
                 </>
               ) : null}
             </div>
+            <ThemeToggle />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={() => void handleSave()} disabled={!canSave || busy}>
@@ -590,58 +596,81 @@ export default function App() {
 
       <Dialog open={dialog === "create-user"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create user</DialogTitle>
-            <DialogDescription>This starts a new workspace.</DialogDescription>
-          </DialogHeader>
-          <Label htmlFor="user-name">User name</Label>
-          <Input id="user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
-          <Button className="mt-3" onClick={() => void handleCreateUser()} disabled={!userName.trim() || busy}>
-            Create
-          </Button>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (userName.trim() && !busy) void handleCreateUser();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Create user</DialogTitle>
+              <DialogDescription>This starts a new workspace.</DialogDescription>
+            </DialogHeader>
+            <Label htmlFor="user-name">User name</Label>
+            <Input id="user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
+            <Button type="submit" className="mt-3" disabled={!userName.trim() || busy}>
+              Create
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={dialog === "import-user"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import user</DialogTitle>
-            <DialogDescription>Open a whole repository as a user.</DialogDescription>
-          </DialogHeader>
-          <Label htmlFor="import-user-name">User name</Label>
-          <Input id="import-user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
-          <Label htmlFor="remote-url" className="mt-2 block">
-            Remote, if you have one
-          </Label>
-          <Input
-            id="remote-url"
-            value={remoteUrl}
-            onChange={(event) => setRemoteUrl(event.target.value)}
-            placeholder="https://..."
-          />
-          <div className="mt-3 flex gap-2">
-            <Button variant="outline" onClick={() => void handleImportUserLocal()} disabled={busy}>
-              <Icons.importUser />
-              Local folder
-            </Button>
-            <Button onClick={() => void handleImportUserRemote()} disabled={!remoteUrl.trim() || busy}>
-              Import remote
-            </Button>
-          </div>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (busy) return;
+              if (remoteUrl.trim()) void handleImportUserRemote();
+              else void handleImportUserLocal();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Import user</DialogTitle>
+              <DialogDescription>Open a whole repository as a user.</DialogDescription>
+            </DialogHeader>
+            <Label htmlFor="import-user-name">User name</Label>
+            <Input id="import-user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
+            <Label htmlFor="remote-url" className="mt-2 block">
+              Remote, if you have one
+            </Label>
+            <Input
+              id="remote-url"
+              value={remoteUrl}
+              onChange={(event) => setRemoteUrl(event.target.value)}
+              placeholder="https://..."
+            />
+            <div className="mt-3 flex gap-2">
+              <Button type="button" variant="outline" onClick={() => void handleImportUserLocal()} disabled={busy}>
+                <Icons.importUser />
+                Local folder
+              </Button>
+              <Button type="submit" disabled={busy}>
+                {remoteUrl.trim() ? "Import remote" : "Import"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={dialog === "create-variant"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create</DialogTitle>
-            <DialogDescription>Name this first resume line.</DialogDescription>
-          </DialogHeader>
-          <Label htmlFor="variant-name">Name</Label>
-          <Input id="variant-name" value={variantName} onChange={(event) => setVariantName(event.target.value)} />
-          <Button className="mt-3" onClick={() => void handleCreateVariant()} disabled={!variantName.trim() || busy}>
-            Create
-          </Button>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (variantName.trim() && !busy) void handleCreateVariant();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Create</DialogTitle>
+              <DialogDescription>Name this first resume line.</DialogDescription>
+            </DialogHeader>
+            <Label htmlFor="variant-name">Name</Label>
+            <Input id="variant-name" value={variantName} onChange={(event) => setVariantName(event.target.value)} />
+            <Button type="submit" className="mt-3" disabled={!variantName.trim() || busy}>
+              Create
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -665,42 +694,52 @@ export default function App() {
 
       <Dialog open={dialog === "create-variant-from"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create variant</DialogTitle>
-            <DialogDescription>This starts a new line from the chosen version.</DialogDescription>
-          </DialogHeader>
-          <Label htmlFor="variant-from-name">Name</Label>
-          <Input
-            id="variant-from-name"
-            value={variantName}
-            onChange={(event) => setVariantName(event.target.value)}
-          />
-          <Button
-            className="mt-3"
-            onClick={() => void handleCreateVariantFrom()}
-            disabled={!variantName.trim() || busy}
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (variantName.trim() && !busy) void handleCreateVariantFrom();
+            }}
           >
-            Create
-          </Button>
+            <DialogHeader>
+              <DialogTitle>Create variant</DialogTitle>
+              <DialogDescription>This starts a new line from the chosen version.</DialogDescription>
+            </DialogHeader>
+            <Label htmlFor="variant-from-name">Name</Label>
+            <Input
+              id="variant-from-name"
+              value={variantName}
+              onChange={(event) => setVariantName(event.target.value)}
+            />
+            <Button type="submit" className="mt-3" disabled={!variantName.trim() || busy}>
+              Create
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={dialog === "import-variant"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import</DialogTitle>
-            <DialogDescription>Choose a name, then one or more HTML files.</DialogDescription>
-          </DialogHeader>
-          <Label htmlFor="import-variant-name">Name</Label>
-          <Input
-            id="import-variant-name"
-            value={variantName}
-            onChange={(event) => setVariantName(event.target.value)}
-          />
-          <Button className="mt-3" onClick={() => void pickHtmlFiles()} disabled={!variantName.trim() || busy}>
-            <Icons.importHtml />
-            Choose files
-          </Button>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (variantName.trim() && !busy) void pickHtmlFiles();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Import</DialogTitle>
+              <DialogDescription>Choose a name, then one or more HTML files.</DialogDescription>
+            </DialogHeader>
+            <Label htmlFor="import-variant-name">Name</Label>
+            <Input
+              id="import-variant-name"
+              value={variantName}
+              onChange={(event) => setVariantName(event.target.value)}
+            />
+            <Button type="submit" className="mt-3" disabled={!variantName.trim() || busy}>
+              <Icons.importHtml />
+              Choose files
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -736,67 +775,85 @@ export default function App() {
 
       <Dialog open={dialog === "name-version"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Name this version</DialogTitle>
-            <DialogDescription>This becomes the saved version name.</DialogDescription>
-          </DialogHeader>
-          <Label htmlFor="version-name">Name</Label>
-          <Input
-            id="version-name"
-            value={versionName}
-            onChange={(event) => setVersionName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && versionName.trim()) void handleFinishVersion();
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (versionName.trim() && !busy) void handleFinishVersion();
             }}
-          />
-          <Button className="mt-3" onClick={() => void handleFinishVersion()} disabled={!versionName.trim() || busy}>
-            Save
-          </Button>
+          >
+            <DialogHeader>
+              <DialogTitle>Name this version</DialogTitle>
+              <DialogDescription>This becomes the saved version name.</DialogDescription>
+            </DialogHeader>
+            <Label htmlFor="version-name">Name</Label>
+            <Input
+              id="version-name"
+              value={versionName}
+              onChange={(event) => setVersionName(event.target.value)}
+            />
+            <Button type="submit" className="mt-3" disabled={!versionName.trim() || busy}>
+              Save
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={dialog === "add-doc"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add document</DialogTitle>
-          </DialogHeader>
-          <Label htmlFor="doc-name">Name</Label>
-          <Input id="doc-name" value={extraName} onChange={(event) => setExtraName(event.target.value)} />
-          <Button className="mt-3" onClick={() => void handleAddNamedDocument()} disabled={!extraName.trim() || busy}>
-            Add document
-          </Button>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (extraName.trim() && !busy) void handleAddNamedDocument();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Add document</DialogTitle>
+            </DialogHeader>
+            <Label htmlFor="doc-name">Name</Label>
+            <Input id="doc-name" value={extraName} onChange={(event) => setExtraName(event.target.value)} />
+            <Button type="submit" className="mt-3" disabled={!extraName.trim() || busy}>
+              Add document
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
 
       <Dialog open={dialog === "export-pdf"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Export</DialogTitle>
-            <DialogDescription>
-              By default this goes to {workspace.pdf_folder || downloads || "Downloads"} as{" "}
-              {workspace.pdf_name_pattern || currentDocument?.name || "the document name"}.
-            </DialogDescription>
-          </DialogHeader>
-          <Label>Folder</Label>
-          <div className="flex gap-2">
-            <Input value={pdfFolder} onChange={(event) => setPdfFolder(event.target.value)} />
-            <Button variant="outline" onClick={() => void pickPdfFolder()}>
-              Browse
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (pdfFolder && pdfName && !busy) void handleExportPdf();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Export</DialogTitle>
+              <DialogDescription>
+                By default this goes to {workspace.pdf_folder || downloads || "Downloads"} as{" "}
+                {workspace.pdf_name_pattern || currentDocument?.name || "the document name"}.
+              </DialogDescription>
+            </DialogHeader>
+            <Label>Folder</Label>
+            <div className="flex gap-2">
+              <Input value={pdfFolder} onChange={(event) => setPdfFolder(event.target.value)} />
+              <Button type="button" variant="outline" onClick={() => void pickPdfFolder()}>
+                Browse
+              </Button>
+            </div>
+            <Label className="mt-2 block">File name</Label>
+            <Input value={pdfName} onChange={(event) => setPdfName(event.target.value)} />
+            <label className="mt-2 flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={setPdfDefault}
+                onChange={(event) => setSetPdfDefault(event.target.checked)}
+              />
+              Set default path and name
+            </label>
+            <Button type="submit" className="mt-3" disabled={!pdfFolder || !pdfName || busy}>
+              Export
             </Button>
-          </div>
-          <Label className="mt-2 block">File name</Label>
-          <Input value={pdfName} onChange={(event) => setPdfName(event.target.value)} />
-          <label className="mt-2 flex items-center gap-2 text-xs">
-            <input
-              type="checkbox"
-              checked={setPdfDefault}
-              onChange={(event) => setSetPdfDefault(event.target.checked)}
-            />
-            Set default path and name
-          </label>
-          <Button className="mt-3" onClick={() => void handleExportPdf()} disabled={!pdfFolder || !pdfName || busy}>
-            Export
-          </Button>
+          </form>
         </DialogContent>
       </Dialog>
     </TooltipProvider>

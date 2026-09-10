@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Textarea } from "@/components/ui/textarea";
 import type { DocumentFile } from "@/lib/types";
+import { HtmlEditor } from "./HtmlEditor";
 import { Preview } from "./Preview";
 
 type Props = {
@@ -31,14 +31,8 @@ export function SplitEditor({ document, onChange }: Props) {
       orientation={wide ? "horizontal" : "vertical"}
       className="min-h-0 flex-1"
     >
-      <ResizablePanel defaultSize="50" minSize="20" className="min-h-0">
-        <Textarea
-          value={document?.content ?? ""}
-          onChange={(event) => onChange(event.target.value)}
-          spellCheck={false}
-          className="h-full resize-none"
-          aria-label="HTML editor"
-        />
+      <ResizablePanel defaultSize="50" minSize="20" className="min-h-0 bg-editor">
+        <HtmlEditor value={document?.content ?? ""} onChange={onChange} />
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel defaultSize="50" minSize="20" className="min-h-0">

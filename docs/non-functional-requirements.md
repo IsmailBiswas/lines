@@ -43,7 +43,7 @@ If a later version history is very long, keep the sidebar usable. Do not load th
 
 The detailed rules live in `interface-guidelines.md`. The quality bar is:
 
-- Monochrome.
+- Light and dark chrome. Syntax color only in the HTML editor.
 - Compact controls.
 - Quiet enough that the resume is the loudest thing on the screen.
 - Consistent spacing and type so the app does not feel handmade in one corner and generic in another.
@@ -56,7 +56,7 @@ The detailed rules live in `interface-guidelines.md`. The quality bar is:
 
 ## Accessible enough for daily use
 
-- Text and chrome must meet a strong contrast standard. A monochrome theme is not an excuse for light gray on light gray.
+- Text and chrome must meet a strong contrast standard in both themes. A dark theme is not an excuse for low-contrast gray on gray.
 - Keyboard users must be able to move between switch user, sidebar, tabs, editor, and the export action.
 - Focus must be visible.
 - The preview is content. The surrounding app chrome should not trap keyboard focus inside the preview with no way out.
@@ -86,4 +86,4 @@ The detailed rules live in `interface-guidelines.md`. The quality bar is:
 - Very large teams or shared editing of the same user.
 - Thousands of variants.
 - Perfect print layout for every possible HTML the user might paste.
-- Pixel-identical preview and PDF in every edge case. They should be close. The preview is still the guide.
+- Matching the preview when the HTML depends on running scripts, or on print-only CSS the preview never shows. For ordinary documents, type, spacing, and icons should match the preview because export uses the same page engine.

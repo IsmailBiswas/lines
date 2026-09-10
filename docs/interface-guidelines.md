@@ -15,10 +15,12 @@ Use these in order when a layout decision is unclear:
 
 ## Theme
 
-- Monochrome only. No accent rainbow, no status colors beyond what contrast already needs.
+- The app has two themes: light and dark. A compact header control switches between them. The last choice is remembered on this machine.
+- Chrome colors live in `src/theme/chrome.ts`. Editor highlight colors live in `src/theme/editor.ts`. Both themes use the same token names. Change values there when experimenting. Do not invent a third palette in a screen.
+- Syntax color lives only in the HTML editor. Do not spread those hues onto buttons, badges, or the sidebar.
+- The preview is the user's page. Do not restyle their resume to match the chrome.
 - If you must signal danger or success, do it with words and weight first, not with a new hue.
 - Use the shared component set (shadcn) so spacing, type, and controls stay related.
-- Surfaces, borders, and text should be a small set of gray steps, not a new value for every block.
 
 ## Size and density
 
@@ -48,7 +50,7 @@ Default split view:
 - Left: HTML editor
 - Right: preview
 
-The two panes should share height. The user is comparing source and result, not scrolling two unrelated pages. The sidebar width and the editor/preview split are resizable. The preview pane is the preview: no padded frame around it.
+The two panes should share height. The user is comparing source and result, not scrolling two unrelated pages. The sidebar width and the editor/preview split are resizable. A visible vertical divider marks each split. The preview pane is the preview: no padded frame around it.
 
 When the window is narrow:
 
@@ -83,7 +85,7 @@ When the window is narrow:
 
 ## Editor and preview
 
-- The editor is a working text surface, not a code-ide theme park. Line numbers are optional; decoration is not the point.
+- The editor is an HTML text surface with syntax highlighting that follows the open theme. Line numbers are fine. Do not add a formatting toolbar.
 - The preview fills its split pane. Do not put a gap, padded card, or extra frame around it.
 - The preview can zoom in and out. When a document first opens, the whole page fits in the pane.
 - Do not put formatting toolbars above the HTML editor in v1. The product is a text-and-preview editor.
@@ -92,6 +94,7 @@ When the window is narrow:
 ## Export modal
 
 - Short. Folder, file name, default hint, confirm, cancel.
+- Enter in a dialog text field submits that dialog's primary action.
 - The default path and name should be written as a sentence the user can trust, not as hidden behavior.
 - Setting a default is a secondary action, not a second page.
 
@@ -125,7 +128,7 @@ When the window is narrow:
 
 ## What to refuse
 
-- New accent colors "just for this badge."
+- New accent colors "just for this badge." Syntax color stays in the editor.
 - Wide primary buttons in the header.
 - Extra settings that only exist to avoid making a default.
 - Git words in the sidebar or the user switcher.
