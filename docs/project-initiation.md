@@ -14,7 +14,7 @@ It uses Git as the version system, not as a developer tool the person in front o
 - A **variant** is a Git **branch**. The variant name is the branch name. A variant is one named line of work, such as a resume aimed at a role or company.
 - A **version** is a Git **commit**. A version is one saved state of the files on that variant.
 
-Every row in the version list is a commit, including Unsaved. **Unsaved** is a version whose commit message is `unsaved`. If the user opens that row and keeps editing, the app amends that same commit. It does not create another commit.
+Every row in the version list is a commit, including Draft. **Draft** is a version whose commit message is `unsaved`. If the user opens that row and keeps editing, the app amends that same commit. It does not create another commit.
 
 The files themselves are HTML. The user edits HTML on one side and sees the rendered page on the other. Other formats, such as PDF, are exports.
 
@@ -37,11 +37,11 @@ The point is local control. Each user's data is a Git repository they can keep o
 - Create a user, or import a whole Git repository as a user.
 - Switch user to move between completely separate workspaces. Only one user is open at a time.
 - On an empty user, create the first variant or import HTML into it. After that, HTML import is gone.
-- Create a later variant from a finished version: three dots on that version, then a name. That is a Git branch starting at that commit. Unsaved offers Delete Unsaved instead.
+- Create a later variant from a finished version: three dots on that version, then a name. That is a Git branch starting at that commit. Draft offers Delete Draft instead.
 - Browse variants in a sidebar, search them by name, and open one.
 - See the versions of the open variant and open any version.
 - Edit and preview HTML for the resume, an optional cover letter, and as many additional documents as they create.
-- Show Unsaved as its own version. Keep editing it by amending that commit. Save asks for a name and finishes the version. Switch and quit write Unsaved. Delete Unsaved drops that commit and returns to the finished version it came from.
+- Show Draft as its own version. Keep editing it by amending that commit. Save asks for a name and finishes the version. Switch and quit write Draft. Delete Draft drops that commit and returns to the finished version it came from.
 - Export the current document as a PDF.
 - Export the open user as a real Git repository folder. Importing that folder, or any other Git repository, adds or opens a user. It does not merge into the user who is already open.
 
@@ -111,10 +111,10 @@ These replace the earlier assumption list.
 
 - A **user** is a Git repository and a complete workspace. The UI presents opening another repository as switching user. User names are free text.
 - A **variant** is a Git branch on the open user. The name typed for it is the branch name. It is free text, not a role or company pattern the app suggests.
-- The first variant exists only while the user is empty: create a resume or import HTML. Every later variant is a branch created from a chosen finished version. Unsaved is not a starting point for a variant.
+- The first variant exists only while the user is empty: create a resume or import HTML. Every later variant is a branch created from a chosen finished version. Draft is not a starting point for a variant.
 - A **version** is a Git commit. Resume, cover letter, and every additional document that exists sit in that same commit.
-- **Unsaved** is also a Git commit. Its message is `unsaved`. Selecting it and editing amends that commit. It does not create a new commit.
-- Starting to edit a finished version creates an Unsaved version under it (a new commit with message `unsaved`). After that, further edits amend Unsaved.
+- **Draft** is also a Git commit. Its message is `unsaved`. Selecting it and editing amends that commit. It does not create a new commit.
+- Starting to edit a finished version creates an Draft version under it (a new commit with message `unsaved`). After that, further edits amend Draft.
 - Documents are HTML only. Additional documents cannot be attached PDFs or other file types. PDF is an export.
 - A new variant starts with a resume only. Do not create empty cover letter or additional files.
 - HTML import is only for an empty user. After a multi-file import, a modal asks which file is resume, cover letter, or additional. Files they do not map are not added. Kinds they do not map are not created empty.
@@ -122,7 +122,7 @@ These replace the earlier assumption list.
 - PDF export prints the document in the active tab.
 - "Last selected" means the last user, then that user's last variant, version, and tab.
 - Creating a user runs `git init` in a new folder. Export copies that repository, `.git` included. Import accepts only a real Git repository.
-- Switching user writes any Unsaved work on the current user first, then opens the other repository. The two users stay separate.
+- Switching user writes any Draft work on the current user first, then opens the other repository. The two users stay separate.
 - Opening a remote means importing the whole Git repository as a user. v1 does not merge two histories or resolve conflicts.
 
 ## Success for v1

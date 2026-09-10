@@ -11,9 +11,9 @@ The interface uses product words. This document also names the Git fact behind e
 | User | One repository | A complete, separate workspace. Switching user opens that repository. |
 | Variant | A branch on the open user. The variant name is the branch name. | One named line of work |
 | Version | A commit | One saved state of the files on that variant |
-| Unsaved | A commit whose message is `unsaved` | Work still in progress. Further edits amend this commit. |
+| Draft | A commit whose message is `unsaved` | Work still in progress. Further edits amend this commit. The UI says Draft. |
 
-A user is a Git repository. A variant is a Git branch. A version is a Git commit. Unsaved is not a working-tree leftover. It is a version, which means it is a commit.
+A user is a Git repository. A variant is a Git branch. A version is a Git commit. Draft is not a working-tree leftover. It is a version, which means it is a commit.
 
 The person using the app should not have to say "repository", "branch", or "commit". The app must still keep each user as a real Git repository so export and remotes stay honest.
 
@@ -76,32 +76,32 @@ There are not three reserved empty files. Missing files are missing. They do not
 
 The open tab decides which of those files is shown, not which version is open.
 
-Versions are listed under the open variant, newest first unless a later decision says otherwise. Each row should be identifiable at a glance. Prefer the commit message plus a time over a raw hash. The Unsaved row is the commit whose message is `unsaved`.
+Versions are listed under the open variant, newest first unless a later decision says otherwise. Each row is slightly indented under its variant. The version name is enough in the list. The created time is a tooltip on hover, not a second line. The Draft row is the commit whose message is `unsaved`.
 
-## Unsaved
+## Draft
 
-Unsaved is a version. In Git it is a commit with the message `unsaved`. It sits under the finished version the user started from, and it must look different from finished versions: clearly temporary, clearly unfinished.
+Draft is a version. In Git it is a commit with the message `unsaved`. The sidebar label is Draft. It sits under the finished version the user started from, and it must look different from finished versions: clearly temporary, clearly unfinished.
 
 How it is written:
 
-- If the user starts editing a **finished** version, the app creates a new Unsaved version: a new commit with message `unsaved`. That finished version can be any version on the variant, not only the latest.
-- Save keeps that new work on the same variant. Versions that were already on the variant stay listed.
-- If the user selects an **Unsaved** version and keeps editing, the app amends that same commit. It does not create another commit.
-- The same Unsaved write happens when they try to open another version, try to open another variant, try to switch user, or try to close the application.
+- If the user starts editing a **finished** version, the app creates a new Draft version: a new commit with message `unsaved`. That finished version can be any version on the variant, not only the latest.
+- Creating a new version keeps that work on the same variant. Versions that were already on the variant stay listed.
+- If the user selects a **Draft** version and keeps editing, the app amends that same commit. It does not create another commit.
+- The same Draft write happens when they try to open another version, try to open another variant, try to switch user, or try to close the application.
 - If there is nothing to write, do not create or amend anything.
-- If the write fails, do not complete the switch or the quit. Tell the user and keep Unsaved selected.
+- If the write fails, do not complete the switch or the quit. Tell the user and keep Draft selected.
 
-Save is different. Save asks for a version name, then turns the current work into a finished version: a commit with that message. Unsaved goes away. The name cannot be empty and cannot be `unsaved`.
+Create new version is different. That action asks for a version name, then turns the current work into a finished version: a commit with that message. Draft goes away. The name cannot be empty and cannot be `unsaved`.
 
-The three-dot control on Unsaved is Delete Unsaved, not Create variant. A later variant starts only from a finished version. Deleting Unsaved drops that commit and opens the finished version it came from. That is the only way Unsaved work is thrown away.
+The three-dot control on Draft is Delete Draft, not Create variant. A later variant starts only from a finished version. Deleting Draft drops that commit and opens the finished version it came from. That is the only way Draft work is thrown away.
 
-Switching and quitting still keep unnamed work as Unsaved so nothing is lost.
+Switching and quitting still keep unnamed work as Draft so nothing is lost.
 
 ## Switching
 
 Switching variant or version is always:
 
-1. If the current files differ from the selected version, write them. Create Unsaved from a finished version, or amend Unsaved if that is what is selected.
+1. If the current files differ from the selected version, write them. Create Draft from a finished version, or amend Draft if that is what is selected.
 2. Open the requested variant or version.
 3. Show that content in the editor and preview.
 
@@ -113,7 +113,7 @@ Do not discard work to make navigation feel instant. Do not silently keep unsave
 
 All documents on a version are HTML files in that commit.
 
-The user can add a cover letter if one is not already there. The user can add as many additional documents as they want. Adding a file on a finished version follows the Unsaved rule above.
+The user can add a cover letter if one is not already there. The user can add as many additional documents as they want. Adding a file on a finished version follows the Draft rule above.
 
 Do not create those files in advance. Do not limit how many additional documents a version may hold.
 
@@ -137,7 +137,7 @@ Use these words in the UI:
 - Switch user
 - Variant
 - Version
-- Unsaved
+- Draft
 - Export
 - Import
 

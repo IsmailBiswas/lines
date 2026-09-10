@@ -1,7 +1,7 @@
 import {
   AlertCircle,
+  Box,
   ChevronsUpDown,
-  Circle,
   File,
   FileDown,
   FileInput,
@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   Mail,
   MailPlus,
+  Maximize,
   MoreHorizontal,
   PanelLeft,
   Pencil,
@@ -23,6 +24,8 @@ import {
   User,
   UserPlus,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 
 export const Icons = {
@@ -36,9 +39,9 @@ export const Icons = {
   deleteUnsaved: Trash2,
   versionMenu: MoreHorizontal,
   importHtml: FileInput,
-  variant: Files,
-  version: Circle,
-  unsaved: Pencil,
+  variant: Box,
+  version: Files,
+  draft: Pencil,
   resume: FileText,
   coverLetter: Mail,
   additional: File,
@@ -52,4 +55,7 @@ export const Icons = {
   sidebar: PanelLeft,
   error: AlertCircle,
   busy: LoaderCircle,
+  zoomIn: ZoomIn,
+  zoomOut: ZoomOut,
+  fit: Maximize,
 };

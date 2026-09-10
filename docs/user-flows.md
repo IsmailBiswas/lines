@@ -4,14 +4,14 @@ These are the paths a person actually takes. If a screen or action is not on one
 
 Keep the diagrams aligned with `version-model.md`. If a flow and the version model disagree, fix one of them on purpose.
 
-A user is a Git repository. A variant is a Git branch. A version is a Git commit. Unsaved is a version whose message is `unsaved`.
+A user is a Git repository. A variant is a Git branch. A version is a Git commit. Draft is a version whose message is `unsaved`.
 
 ## Map of the main screen
 
 Once the open user has at least one variant, the window has four jobs:
 
 1. **Current user** — see who is open, switch user, add a user.
-2. **Sidebar** — find variants, open a variant, open a version, see Unsaved.
+2. **Sidebar** — find variants, open a variant, open a version, see Draft.
 3. **Document tabs** — move between the resume and any other HTML documents on that version.
 4. **Split view** — HTML on the left, rendered preview on the right.
 
@@ -74,13 +74,13 @@ flowchart TD
   openApp[App opens]
   restoreUser[Restore the last user]
   restorePlace[Restore that user's last variant, version, and tab]
-  unsaved{Is that version Unsaved?}
-  showUnsaved[Show that variant with Unsaved selected]
+  unsaved{Is that version Draft?}
+  showDraft[Show that variant with Draft selected]
   showSaved[Show the last finished version]
   main[Editor and preview match that selection]
 
   openApp --> restoreUser --> restorePlace --> unsaved
-  unsaved -->|Yes| showUnsaved --> main
+  unsaved -->|Yes| showDraft --> main
   unsaved -->|No| showSaved --> main
 ```
 
@@ -93,7 +93,7 @@ flowchart TD
   openSwitch[Open switch user]
   list[See known users]
   pick{What do they choose?}
-  write[Write Unsaved on the current user if needed]
+  write[Write Draft on the current user if needed]
   openUser[Open the other repository]
   restore[Restore that user's last place]
   addNew[Ask for a new user name]
@@ -143,15 +143,15 @@ flowchart TD
   menu --> name --> branch --> open
 ```
 
-This is the only way to add a variant after the user already has work. The three-dot control is on a finished version, not on Unsaved. The new branch starts at the chosen commit, not at the tip of some other branch and not from an empty tree. The new variant lists that starting version and later versions on this line only. Older parent versions stay on the variant they came from.
+This is the only way to add a variant after the user already has work. The three-dot control is on a finished version, not on Draft. The new branch starts at the chosen commit, not at the tip of some other branch and not from an empty tree. The new variant lists that starting version and later versions on this line only. Older parent versions stay on the variant they came from.
 
-## Delete Unsaved
+## Delete Draft
 
 ```mermaid
 flowchart TD
-  menu[Three dots on Unsaved]
+  menu[Three dots on Draft]
   ask[Ask to delete]
-  drop[Drop the Unsaved commit]
+  drop[Drop the Draft commit]
   parent[Open the finished version it came from]
 
   menu --> ask --> drop --> parent
@@ -165,38 +165,38 @@ This is the only way unnamed work is thrown away. Save still names it. Switch an
 flowchart TD
   finished[User is on a finished version]
   types[User edits HTML]
-  mark[Unsaved appears under that version]
+  mark[Draft appears under that version]
   preview[Preview updates]
-  action{Save, or leave?}
+  action{Create new version, or leave?}
   name[Ask for a version name]
   finish[Write a finished version with that name]
-  leave[Write Unsaved, then switch or quit]
+  leave[Write Draft, then switch or quit]
 
   finished --> types --> mark --> preview --> action
-  action -->|Save| name --> finish
+  action -->|Create new version| name --> finish
   action -->|Switch or quit| leave
 ```
 
-The Unsaved row is a real version: a Git commit with message `unsaved`. It must appear as soon as the files differ. This path works from any finished version on the variant, not only the latest. Save names that work and keeps it on the same variant. Versions that were already there stay listed. Switching and quitting keep unnamed work as Unsaved.
+The Draft row is a real version: a Git commit with message `unsaved`. It must appear as soon as the files differ. This path works from any finished version on the variant, not only the latest. Create new version names that work and keeps it on the same variant. Versions that were already there stay listed. Switching and quitting keep unnamed work as Draft.
 
-## Keep editing Unsaved
+## Keep editing Draft
 
 ```mermaid
 flowchart TD
-  openUnsaved[User selects the Unsaved version]
+  openDraft[User selects the Draft version]
   types[User edits HTML]
   preview[Preview updates]
-  action{Save, or leave?}
+  action{Create new version, or leave?}
   name[Ask for a version name]
   finish[Amend that commit into a finished version]
-  leave[Amend Unsaved, then switch or quit]
+  leave[Amend Draft, then switch or quit]
 
-  openUnsaved --> types --> preview --> action
-  action -->|Save| name --> finish
+  openDraft --> types --> preview --> action
+  action -->|Create new version| name --> finish
   action -->|Switch or quit| leave
 ```
 
-Selecting Unsaved and continuing amends that commit. Do not stack a second Unsaved under the first.
+Selecting Draft and continuing amends that commit. Do not stack a second Draft under the first.
 
 ## Leave or quit with unwritten files
 
@@ -204,7 +204,7 @@ Selecting Unsaved and continuing amends that commit. Do not stack a second Unsav
 flowchart TD
   dirty[Current files differ from the selected version]
   action{They save, switch version, switch variant, switch user, or quit}
-  write[Create Unsaved or amend Unsaved]
+  write[Create Draft or amend Draft]
   ok{Write succeeded?}
   stay[Stay where they are and explain the failure]
   next[Complete the switch or quit]
@@ -214,7 +214,7 @@ flowchart TD
   ok -->|No| stay
 ```
 
-This is one path with those triggers. Create or amend depends only on whether Unsaved already exists for this edit.
+This is one path with those triggers. Create or amend depends only on whether Draft already exists for this edit.
 
 ## Move between documents
 
@@ -233,10 +233,10 @@ flowchart TD
 Tab changes should feel instant and local:
 
 - Same variant.
-- Same version, including Unsaved.
+- Same version, including Draft.
 - Only the editor and preview content change.
 
-Edits in any tab belong to the current version. Adding a file on a finished version creates Unsaved. Adding a file on Unsaved amends it.
+Edits in any tab belong to the current version. Adding a file on a finished version creates Draft. Adding a file on Draft amends it.
 
 There is no empty cover letter tab and no reserved additional tab. Those appear after the user creates or imports them. Additional documents have no limit.
 

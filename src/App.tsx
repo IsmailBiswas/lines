@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SplitEditor } from "@/features/editor/SplitEditor";
 import { UserSwitcher } from "@/features/user/UserSwitcher";
@@ -35,6 +35,20 @@ const emptyWorkspace: Workspace = {
   pdf_folder: null,
   pdf_name_pattern: null,
 };
+
+function useWideLayout() {
+  const [wide, setWide] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : true,
+  );
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const update = () => setWide(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return wide;
+}
 
 function sameDocuments(left: DocumentFile[], right: DocumentFile[]) {
   if (left.length !== right.length) return false;
@@ -384,6 +398,8 @@ export default function App() {
     if (selected && !Array.isArray(selected)) setPdfFolder(selected);
   }
 
+  const wide = useWideLayout();
+  const showSidebar = wide || sidebarOpen;
   const noUsers = workspace.users.length === 0;
   const noVariants = Boolean(workspace.current_user) && workspace.variants.length === 0;
   const hasCoverLetter = documents.some((document) => document.kind === "cover-letter");
@@ -396,79 +412,81 @@ export default function App() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex h-full overflow-hidden">
-        <aside
-          className={cn(
-            "w-64 shrink-0 flex-col border-r bg-background",
-            sidebarOpen ? "flex" : "hidden lg:flex",
-          )}
-        >
-          <div className="p-2">
-            <UserSwitcher
-              users={workspace.users}
-              current={workspace.current_user}
-              onSwitch={(id) => void handleSwitchUser(id)}
-              onCreate={() => setDialog("create-user")}
-              onImport={() => setDialog("import-user")}
-              onExport={() => void handleExportUser()}
-            />
-          </div>
-          <Separator />
-          {workspace.current_user && workspace.variants.length > 0 ? (
-          <div className="flex items-center gap-1 p-2">
-            <div className="relative flex-1">
-              <Icons.search className="pointer-events-none absolute left-2 top-2 size-3.5 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search"
-                className="pl-7"
-              />
-            </div>
-          </div>
-          ) : null}
-          <ScrollArea className="flex-1">
-            <div className="space-y-3 p-2">
-              {filteredVariants.map((variant) => (
-                <div key={variant.name}>
-                  <button
-                    type="button"
-                    onClick={() => void handleOpenVariant(variant.name)}
-                    className={cn(
-                      "flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-xs",
-                      variant.name === workspace.current_variant
-                        ? "bg-accent font-medium"
-                        : "hover:bg-accent/60",
-                    )}
-                  >
-                    <Icons.variant className="size-3.5" />
-                    <span className="truncate">{variant.name}</span>
-                  </button>
-                  {variant.name === workspace.current_variant ? (
-                    <div className="mt-1">
-                      <VersionList
-                        rows={versionRows}
-                        currentId={workspace.current_version}
-                        onSelect={(id) => void handleOpenVersion(id)}
-                        onCreateVariant={(id) => {
-                          setFromVersionId(id);
-                          setVariantName("");
-                          setDialog("create-variant-from");
-                        }}
-                        onDeleteUnsaved={(id) => {
-                          setDeleteUnsavedId(id);
-                          setDialog("delete-unsaved");
-                        }}
+      <ResizablePanelGroup orientation="horizontal" className="h-full overflow-hidden">
+        {showSidebar ? (
+          <>
+            <ResizablePanel defaultSize="22" minSize="16" maxSize="40" className="min-h-0">
+              <aside className="flex h-full min-h-0 flex-col bg-background">
+                <div className="flex h-10 shrink-0 items-center border-b px-2">
+                  <UserSwitcher
+                    users={workspace.users}
+                    current={workspace.current_user}
+                    onSwitch={(id) => void handleSwitchUser(id)}
+                    onCreate={() => setDialog("create-user")}
+                    onImport={() => setDialog("import-user")}
+                    onExport={() => void handleExportUser()}
+                  />
+                </div>
+                {workspace.current_user && workspace.variants.length > 0 ? (
+                  <div className="flex h-10 shrink-0 items-center gap-1 px-2">
+                    <div className="relative flex-1">
+                      <Icons.search className="pointer-events-none absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
+                      <Input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Search"
+                        className="pl-7"
                       />
                     </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </aside>
+                  </div>
+                ) : null}
+                <ScrollArea className="min-h-0 flex-1">
+                  <div className="space-y-3 p-2">
+                    {filteredVariants.map((variant) => (
+                      <div key={variant.name}>
+                        <button
+                          type="button"
+                          onClick={() => void handleOpenVariant(variant.name)}
+                          className={cn(
+                            "flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-xs",
+                            variant.name === workspace.current_variant
+                              ? "bg-accent font-medium"
+                              : "hover:bg-accent/60",
+                          )}
+                        >
+                          <Icons.variant className="size-3.5" />
+                          <span className="truncate">{variant.name}</span>
+                        </button>
+                        {variant.name === workspace.current_variant ? (
+                          <div className="mt-1">
+                            <VersionList
+                              rows={versionRows}
+                              currentId={workspace.current_version}
+                              onSelect={(id) => void handleOpenVersion(id)}
+                              onCreateVariant={(id) => {
+                                setFromVersionId(id);
+                                setVariantName("");
+                                setDialog("create-variant-from");
+                              }}
+                              onDeleteUnsaved={(id) => {
+                                setDeleteUnsavedId(id);
+                                setDialog("delete-unsaved");
+                              }}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </aside>
+            </ResizablePanel>
+            <ResizableHandle />
+          </>
+        ) : null}
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <ResizablePanel defaultSize={showSidebar ? "78" : "100"} minSize="40" className="min-h-0">
+        <main className="flex h-full min-w-0 flex-col">
           <header className="flex h-10 items-center gap-2 border-b px-2">
             <Button
               variant="ghost"
@@ -526,7 +544,7 @@ export default function App() {
                   {busy ? <Icons.busy className="animate-spin" /> : <Icons.save />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Save</TooltipContent>
+              <TooltipContent>Create new version</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -567,7 +585,8 @@ export default function App() {
             <SplitEditor document={currentDocument} onChange={updateContent} />
           )}
         </main>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       <Dialog open={dialog === "create-user"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
@@ -629,7 +648,7 @@ export default function App() {
       <Dialog open={dialog === "delete-unsaved"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Unsaved</DialogTitle>
+            <DialogTitle>Delete Draft</DialogTitle>
             <DialogDescription>This work will be gone.</DialogDescription>
           </DialogHeader>
           <div className="mt-3 flex gap-2">

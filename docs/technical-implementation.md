@@ -204,10 +204,10 @@ If a new command would let the UI create commits itself, stop. That belongs in t
 
 - Current user at the top of the sidebar, with a switch-user control
 - Variant search and list
-- Versions under the open variant, each with a three-dot control to create a variant from that commit
+- Versions under the open variant, slightly indented, each with a three-dot control to create a variant from a finished version or delete Draft
 - Document tabs
-- Header actions on the right: save if you want it visible, export
-- Split view: editor left, preview right
+- Header actions on the right: create new version, export
+- Split view: editor left, preview right, both resizable. Preview has zoom and opens fitted to the pane.
 
 Narrow windows may collapse the sidebar. Switch user, tabs, editor, preview, and export must still be reachable.
 
@@ -225,7 +225,7 @@ Hold only what the screen needs:
 - Whether the editor differs from the selected version
 - Busy and error for the last action
 
-When the person types, mark dirty and update preview. Creating the Unsaved row can happen on first difference or on the next write. The sidebar must show Unsaved as soon as the files differ. If the commit does not exist yet, show the row anyway, then let the next write create it.
+When the person types, mark dirty and update preview. Creating the Draft row can happen on first difference or on the next write. The sidebar must show Draft as soon as the files differ. If the commit does not exist yet, show the row anyway, then let the next write create it.
 
 ### Dialogs
 
@@ -235,14 +235,14 @@ Keep them short and reuse the same shells:
 - Create user
 - Import user (local folder or remote)
 - Create variant (finished versions only)
-- Delete Unsaved
+- Delete Draft
 - Import HTML files, then a mapping step if there are several
 - Add additional document (name)
 - Export PDF
 
 ### Editor
 
-A plain HTML text surface is enough for v1. Do not add a formatting toolbar. Preview updates as they type.
+A plain HTML text surface is enough for v1. Do not add a formatting toolbar. Preview updates as they type. The preview iframe is sandboxed (no scripts). Same-origin is allowed only so the pane can measure the page and fit or zoom it. The preview fills its pane with no inner card or padding.
 
 ## Icons
 
@@ -263,17 +263,20 @@ Use the same icon for the same action everywhere.
 | Create first variant | `Plus` | Create new, empty user only |
 | Version menu | `MoreHorizontal` | Version actions |
 | Create variant from version | `Plus` | Create variant |
-| Delete Unsaved | `Trash2` | Delete Unsaved |
+| Delete Draft | `Trash2` | Delete Draft |
 | Import HTML | `FileInput` | Import, empty user only |
-| Variant row | `GitBranch` is too Git. Use `Files` or `Folder` | Variant name |
-| Finished version | `Circle` or `History` | Version message and time |
-| Unsaved version | `Pencil` | Unsaved |
+| Variant row | `Box` | Variant name |
+| Finished version | `Files` | Version message. Created time is a tooltip. |
+| Draft version | `Pencil` | Draft |
+| Create new version | `Save` | Create new version |
+| Preview zoom in | `ZoomIn` | Zoom in |
+| Preview zoom out | `ZoomOut` | Zoom out |
+| Preview fit | `Maximize` | Fit |
 | Resume tab | `FileText` | Resume |
 | Cover letter tab | `Mail` | Cover letter |
 | Additional document tab | `File` | Document name |
 | Add cover letter | `MailPlus` | Add cover letter |
 | Add additional document | `FilePlus` | Add document |
-| Save | `Save` | Save |
 | Export PDF | `FileDown` | Export |
 | Close dialog | `X` | Close |
 | Confirm | keep the button label, no extra icon required | Export, Create, Import |

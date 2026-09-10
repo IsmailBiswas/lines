@@ -4,7 +4,7 @@ These are the qualities the product must have while doing the work in the functi
 
 ## Safe with the user's work
 
-- Never drop Unsaved work to make navigation, user switching, or shutdown easier.
+- Never drop Draft work to make navigation, user switching, or shutdown easier.
 - Never show one user's variants, versions, or documents while another user is open.
 - Never write a version that drops a document because that tab was not open.
 - Never invent empty cover letter or additional files just to make a write look complete.
@@ -77,7 +77,7 @@ The detailed rules live in `interface-guidelines.md`. The quality bar is:
 
 ## Durable enough for real use
 
-- Unexpected shutdown should not corrupt the open user. Unsaved is a real commit, so it should still be there on next launch once it has been written.
+- Unexpected shutdown should not corrupt the open user. Draft is a real commit, so it should still be there on next launch once it has been written.
 - PDF export should produce a file the user can open in a normal reader.
 - Importing a user this app exported should open without a conversion step.
 

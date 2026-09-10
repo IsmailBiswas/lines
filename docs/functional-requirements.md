@@ -4,7 +4,7 @@ This is the list of product behavior for v1. If it is not here, it is not requir
 
 Each item is written so a person can check it without reading code.
 
-A user is a Git repository. A variant is a Git branch. A version is a Git commit. Unsaved is a commit whose message is `unsaved`.
+A user is a Git repository. A variant is a Git branch. A version is a Git commit. Draft is a commit whose message is `unsaved`.
 
 ## Users
 
@@ -21,14 +21,14 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 - The person can import a remote Git repository as a user by cloning it.
 - Importing a repository does not merge it into the user who is already open.
 - The person can export the open user to a folder. That folder is a real Git repository and can be imported again as a user.
-- Switching user writes Unsaved on the current user first. If that write fails, the app does not switch.
+- Switching user writes Draft on the current user first. If that write fails, the app does not switch.
 
 ## Variants
 
 - If the open user has no variants, the person can create the first variant by giving it a name. That creates the first Git branch and a first commit with a new HTML resume.
 - If the open user has no variants, the person can import one or more HTML files as the first variant. If several files are imported, a mapping step asks which file is resume, cover letter, or additional.
 - After the user has any variant, HTML import is not available.
-- After the user has any variant, a new variant is created only from a finished version: the three-dot control on that version, then a name. In Git this is a new branch starting at that commit. Unsaved does not offer Create variant.
+- After the user has any variant, a new variant is created only from a finished version: the three-dot control on that version, then a name. In Git this is a new branch starting at that commit. Draft does not offer Create variant.
 - There is no + control that creates a variant from nothing once the user has work.
 - The sidebar lists variants by name.
 - The user can search the sidebar list by variant name.
@@ -58,16 +58,16 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 - The main work area is a split view: editable HTML on the left, rendered preview on the right.
 - Changing the HTML updates the preview.
 - Preview is the document as a page, not a dump of tags.
-- Editing a finished version creates Unsaved. That finished version can be any version on the variant, not only the latest. Editing Unsaved amends that same version.
-- Saving that Unsaved writes a finished version on the same variant. Other versions already on the variant stay listed.
+- Editing a finished version creates Draft. That finished version can be any version on the variant, not only the latest. Editing Draft amends that same version.
+- Creating a new version from that Draft writes a finished version on the same variant. Other versions already on the variant stay listed.
 
-## Unsaved and writing
+## Draft and writing
 
-- When the user starts changing a finished version, the sidebar shows an Unsaved row under that version.
-- Unsaved is a version: a Git commit with message `unsaved`. It is visually distinct from finished versions.
-- If the user selects Unsaved and continues editing, later writes amend that commit. They do not create a new commit.
-- The user can save on purpose. Save asks for a version name and writes a finished version with that name. Unsaved is gone after that.
-- The three-dot control on Unsaved is Delete Unsaved. It asks first, then drops that Unsaved commit and opens the finished version it came from. Finished versions cannot be deleted.
+- When the user starts changing a finished version, the sidebar shows an Draft row under that version.
+- Draft is a version: a Git commit with message `unsaved`. It is visually distinct from finished versions.
+- If the user selects Draft and continues editing, later writes amend that commit. They do not create a new commit.
+- The user can create a new version on purpose. That action asks for a version name and writes a finished version with that name. Draft is gone after that.
+- The three-dot control on Draft is Delete Draft. It asks first, then drops that Draft commit and opens the finished version it came from. Finished versions cannot be deleted.
 - If they try to select another version, select another variant, switch user, or close the app while current files differ, the app writes first.
 - If there are no changes, the app does not create or amend a commit.
 - If a required write fails, the app does not switch or quit, and it tells the user why.
@@ -84,7 +84,7 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 ## Returning to the app
 
 - On later launches, the app opens the last user.
-- It then restores that user's last variant, version (including Unsaved), and document tab, when that information is still valid.
+- It then restores that user's last variant, version (including Draft), and document tab, when that information is still valid.
 - If the last user is gone, open a remaining user, or the first-run empty screen.
 - If that user's last variant is gone, open a remaining variant, or that user's empty screen.
 

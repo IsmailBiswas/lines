@@ -24,12 +24,12 @@ Pretty code that drifts from the documents is not a good change.
 ## Product constraints you do not get to reinterpret
 
 - A user is a Git repository and a complete workspace. The UI presents opening another repository as switching user.
-- A variant is a Git branch. A version is a Git commit. Unsaved is a commit whose message is `unsaved`.
+- A variant is a Git branch. A version is a Git commit. Draft is a commit whose message is `unsaved`.
 - HTML import and empty-variant create exist only on an empty user. Later variants are branches created from a chosen version.
 - Exporting a user copies a real Git repository, `.git` included. Importing a user requires a real Git repository.
 - Users do not share variants, versions, or documents. Never mix two repositories in one screen.
-- Editing a finished version creates Unsaved. Editing Unsaved amends that same commit.
-- Save asks for a version name and writes a finished commit. Switch and quit still write Unsaved.
+- Editing a finished version creates Draft. Editing Draft amends that same commit.
+- Create new version asks for a version name and writes a finished commit. Switch and quit still write Draft.
 - Resume, cover letter, and every additional document that exists live in the same version. There is no cap on additional documents. Do not create empty ones.
 - HTML is the stored form. PDF is an export.
 - Write happens on save (named), on switch (version, variant, or user), and on quit. Failed write blocks the switch or quit.
@@ -56,12 +56,12 @@ Follow `docs/non-functional-requirements.md`.
 - Do not write files outside a path the user confirmed.
 - Do not put secrets or remote credentials in a user's repository.
 - Do not create a second database that can disagree with Git.
-- Prefer blocking an action over destroying Unsaved work.
+- Prefer blocking an action over destroying Draft work.
 
 ## How to keep the project understandable
 
 - Prefer clear names over clever names.
-- Keep product language stable: user, switch user, variant, version, unsaved, export, import.
+- Keep product language stable: user, switch user, variant, version, draft, export, import. The UI label is Draft. The Git commit message stays `unsaved`.
 - Put product decisions in `docs/`, not only in chat or in comments.
 - Keep `draft.md` as the original sketch. Do not patch it into a second spec.
 - When a flow changes, update the mermaid in `docs/user-flows.md`.
@@ -89,7 +89,7 @@ Small implementation choices are fine. New product surface is not fine without a
 Before you consider a change done:
 
 - Walk the relevant path in `docs/user-flows.md` as a user would.
-- Confirm Unsaved create-versus-amend behavior if you touched editing or navigation.
+- Confirm Draft create-versus-amend behavior if you touched editing or navigation.
 - Confirm the last-opened user and variant still restore if you touched startup.
 - Confirm two users cannot see each other's work if you touched switching user.
 - Confirm a narrow window can still reach the thing you added.

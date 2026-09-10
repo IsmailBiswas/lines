@@ -33,6 +33,7 @@ Use these in order when a layout decision is unclear:
 - Use an 8-point spacing system. Padding, gaps, and control heights should land on multiples of 8.
 - Use a 12-column layout for the main work area so the split view and its collapse behavior stay predictable.
 - Align sidebar rows, tabs, and header actions to the same vertical rhythm.
+- The sidebar header and the main header are the same height so their bottom edges meet as one line.
 
 ## Main layout
 
@@ -47,7 +48,7 @@ Default split view:
 - Left: HTML editor
 - Right: preview
 
-The two panes should share height. The user is comparing source and result, not scrolling two unrelated pages.
+The two panes should share height. The user is comparing source and result, not scrolling two unrelated pages. The sidebar width and the editor/preview split are resizable. The preview pane is the preview: no padded frame around it.
 
 When the window is narrow:
 
@@ -65,9 +66,10 @@ When the window is narrow:
 ## Sidebar
 
 - Variants are the primary list of the open user.
-- Versions appear for the open variant.
-- Unsaved is a child of the finished version it came from, not a floating extra row.
-- Unsaved must be easy to spot: lighter structure, a clear label, and no chance of looking like a finished version.
+- Versions appear for the open variant, slightly indented under that variant.
+- Draft is a child of the finished version it came from, not a floating extra row.
+- Draft must be easy to spot: lighter structure, a clear label, and no chance of looking like a finished version.
+- Version rows show the name only. The created time is a tooltip on hover.
 - Search sits at the top of the variant list and only promises to filter names.
 - After the user has work, do not show a + or import control in the sidebar. New variants come from the three-dot control on a version.
 - Selected variant and selected version must both be obvious. Selection is a shape and weight change, not a color shout.
@@ -82,8 +84,9 @@ When the window is narrow:
 ## Editor and preview
 
 - The editor is a working text surface, not a code-ide theme park. Line numbers are optional; decoration is not the point.
-- The preview is a page. Give it a surface that looks like paper against the app chrome.
-- Do not put formatting toolbars above the HTML editor in v1. The draft is a text-and-preview product.
+- The preview fills its split pane. Do not put a gap, padded card, or extra frame around it.
+- The preview can zoom in and out. When a document first opens, the whole page fits in the pane.
+- Do not put formatting toolbars above the HTML editor in v1. The product is a text-and-preview editor.
 - Scroll of editor and preview can be independent in v1. If they later stay linked, that is an enhancement, not a current requirement.
 
 ## Export modal
@@ -103,14 +106,14 @@ When the window is narrow:
 ## Motion and feedback
 
 - Keep motion short and functional: panels opening, rows appearing.
-- When Unsaved appears, it should be noticeable without a bounce or flourish.
+- When Draft appears, it should be noticeable without a bounce or flourish.
 - Saving, exporting, and remote actions need a busy state and a finished state.
 - Failures use a clear message near the action. Do not rely on color alone.
 
 ## Icons
 
 - One library: Lucide. It is the set that matches shadcn.
-- Use an icon whenever the control is an action or a kind: switch user, create, import, export, search, save, add document, tabs, Unsaved, empty states, sidebar collapse, busy, and failure.
+- Use an icon whenever the control is an action or a kind: switch user, create, import, export, search, create new version, add document, tabs, Draft, empty states, sidebar collapse, busy, and failure.
 - Do not use Git-branded Lucide icons in the main UI.
 - The exact icon names live in `technical-implementation.md`. Do not pick a new Lucide icon for an action that already has one.
 
