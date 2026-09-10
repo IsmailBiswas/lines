@@ -110,14 +110,18 @@ It must be able to:
 - Clone a remote into a path
 - Copy or open a local repository this app exported
 - List branches (variants)
-- Create a branch
+- Create the first branch only when the repository has none
+- Create a later branch from an existing commit
 - Switch the open branch
-- List commits on a branch, newest first
+- List commits on a branch, newest first, stopping at that variant's starting commit (stored as a Git ref when the variant is created). Also list versions created later from an older version on the same variant (kept as Git refs so they stay visible)
 - Read the file tree of a commit
-- Create a commit with message `unsaved`
+- Create a commit with message `unsaved` from any finished version on the variant
 - Amend the current `unsaved` commit
+- Delete an `unsaved` commit and move the branch back to its parent when that commit was the tip
+- Refuse to create a later branch from an `unsaved` commit
 - Refuse to amend a finished commit
-- Export by making that repository available at a chosen path
+- Export by copying the whole repository, including `.git`, to a chosen folder
+- Refuse to import a folder that is not a Git repository
 
 Product words stay in the frontend. This service can think in branch and commit.
 
@@ -186,8 +190,8 @@ Treat imported HTML as untrusted.
 Keep the frontend on a short list. Suggested commands:
 
 - List users, create user, import user, switch user, export user
-- List variants, create variant, import variant files, open variant
-- List versions, open version, save
+- List variants, create the first variant on an empty user, import HTML only on an empty user, create a later variant from a version, open variant
+- List versions, open version, write Unsaved, finish a named version
 - Add cover letter, add additional document
 - Export PDF
 - Choose folder, choose files
@@ -200,7 +204,7 @@ If a new command would let the UI create commits itself, stop. That belongs in t
 
 - Current user at the top of the sidebar, with a switch-user control
 - Variant search and list
-- Versions under the open variant
+- Versions under the open variant, each with a three-dot control to create a variant from that commit
 - Document tabs
 - Header actions on the right: save if you want it visible, export
 - Split view: editor left, preview right
@@ -230,7 +234,8 @@ Keep them short and reuse the same shells:
 - First run: user name, then create or import a variant
 - Create user
 - Import user (local folder or remote)
-- Create variant
+- Create variant (finished versions only)
+- Delete Unsaved
 - Import HTML files, then a mapping step if there are several
 - Add additional document (name)
 - Export PDF
@@ -255,8 +260,11 @@ Use the same icon for the same action everywhere.
 | Import user | `FolderInput` | Import user |
 | Export user | `FolderOutput` | Export user |
 | Search variants | `Search` | Search |
-| Create variant | `Plus` | Create |
-| Import HTML | `FileInput` | Import |
+| Create first variant | `Plus` | Create new, empty user only |
+| Version menu | `MoreHorizontal` | Version actions |
+| Create variant from version | `Plus` | Create variant |
+| Delete Unsaved | `Trash2` | Delete Unsaved |
+| Import HTML | `FileInput` | Import, empty user only |
 | Variant row | `GitBranch` is too Git. Use `Files` or `Folder` | Variant name |
 | Finished version | `Circle` or `History` | Version message and time |
 | Unsaved version | `Pencil` | Unsaved |
@@ -299,8 +307,8 @@ If a control has no honest Lucide match, use a label only. Do not stretch an unr
 ### Edit and save
 
 1. Person types. Preview updates. Unsaved appears under the finished version if it is not there.
-2. Save or leave. Write service creates or amends the `unsaved` commit.
-3. Unsaved stays selected.
+2. Save asks for a version name, then writes a finished commit with that message.
+3. Switch or quit writes Unsaved so the work is not lost.
 
 ### Switch user
 
@@ -311,10 +319,19 @@ If a control has no honest Lucide match, use a label only. Do not stretch an unr
 
 ### Import several HTML files
 
+Only while the user has no variants.
+
 1. Ask for a variant name.
 2. Pick files.
 3. If more than one, map each file to resume, cover letter, or additional.
 4. Write only the mapped files into the first commit.
+
+### Create a later variant
+
+1. Three dots on a version.
+2. Ask for a name.
+3. Create a Git branch that points at that commit.
+4. Open the new variant.
 
 ## Build order
 

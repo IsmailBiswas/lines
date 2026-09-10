@@ -2,7 +2,14 @@
 
 A local desktop app for versioned resumes. A user is a Git repository and a complete workspace. Switching user opens another repository. Each named resume line is a variant, which is a Git branch. Each save is a version, which is a Git commit. The files are HTML. PDF is an export.
 
-This repository is in the document stage. Read the docs before adding application code.
+## Run
+
+```
+npm install
+npm run tauri dev
+```
+
+Needs Rust and Node. The first compile of Git (libgit2) takes a while.
 
 ## Start here
 

@@ -60,9 +60,10 @@ Rules for this path:
 
 - The first name is the user name. That creates the first repository.
 - The second name is the variant name and the Git branch name.
-- Import accepts HTML only.
+- Import accepts HTML only, and only while this user has no variants yet.
 - One file becomes the resume. Several files go through a mapping modal: each file is resume, cover letter, or an additional document.
 - Do not create a cover letter or additional document that was not imported or added.
+- After the first variant exists, this import path is closed.
 - After either choice, that user is open, the new variant is selected, and the resume tab is open.
 - The left panel shows editable HTML. The right panel shows that HTML rendered.
 
@@ -130,22 +131,53 @@ flowchart TD
 
 If the current files differ from the selected version, selecting another variant, version, or user follows the write-before-switch path below.
 
+## Create a later variant from a version
+
+```mermaid
+flowchart TD
+  menu[Three dots on a version]
+  name[Ask for a variant name]
+  branch[Create a Git branch at that commit]
+  open[Open the new variant on that version]
+
+  menu --> name --> branch --> open
+```
+
+This is the only way to add a variant after the user already has work. The three-dot control is on a finished version, not on Unsaved. The new branch starts at the chosen commit, not at the tip of some other branch and not from an empty tree. The new variant lists that starting version and later versions on this line only. Older parent versions stay on the variant they came from.
+
+## Delete Unsaved
+
+```mermaid
+flowchart TD
+  menu[Three dots on Unsaved]
+  ask[Ask to delete]
+  drop[Drop the Unsaved commit]
+  parent[Open the finished version it came from]
+
+  menu --> ask --> drop --> parent
+```
+
+This is the only way unnamed work is thrown away. Save still names it. Switch and quit still write it.
+
 ## Edit a finished version
 
 ```mermaid
 flowchart TD
   finished[User is on a finished version]
   types[User edits HTML]
-  createUnsaved[Create an Unsaved version under it]
+  mark[Unsaved appears under that version]
   preview[Preview updates]
-  save[User saves, switches, or quits]
-  amend[Amend that Unsaved commit]
-  stay[Unsaved stays selected]
+  action{Save, or leave?}
+  name[Ask for a version name]
+  finish[Write a finished version with that name]
+  leave[Write Unsaved, then switch or quit]
 
-  finished --> types --> createUnsaved --> preview --> save --> amend --> stay
+  finished --> types --> mark --> preview --> action
+  action -->|Save| name --> finish
+  action -->|Switch or quit| leave
 ```
 
-The Unsaved row is a real version: a Git commit with message `unsaved`. It must appear as soon as the files differ. Do not wait for a later save click to admit that work exists.
+The Unsaved row is a real version: a Git commit with message `unsaved`. It must appear as soon as the files differ. This path works from any finished version on the variant, not only the latest. Save names that work and keeps it on the same variant. Versions that were already there stay listed. Switching and quitting keep unnamed work as Unsaved.
 
 ## Keep editing Unsaved
 
@@ -154,14 +186,17 @@ flowchart TD
   openUnsaved[User selects the Unsaved version]
   types[User edits HTML]
   preview[Preview updates]
-  write[User saves, switches, or quits]
-  amend[Amend the same Unsaved commit]
-  noNew[No new version is created]
+  action{Save, or leave?}
+  name[Ask for a version name]
+  finish[Amend that commit into a finished version]
+  leave[Amend Unsaved, then switch or quit]
 
-  openUnsaved --> types --> preview --> write --> amend --> noNew
+  openUnsaved --> types --> preview --> action
+  action -->|Save| name --> finish
+  action -->|Switch or quit| leave
 ```
 
-Selecting Unsaved and continuing is the amend path. Do not stack a second Unsaved under the first.
+Selecting Unsaved and continuing amends that commit. Do not stack a second Unsaved under the first.
 
 ## Leave or quit with unwritten files
 
@@ -239,7 +274,7 @@ flowchart TD
   start --> writeRepo --> later --> importUser --> open
 ```
 
-Export writes the open user's repository. Import adds or opens a user. v1 does not merge that repository into a user who is already open.
+Export copies the open user's Git repository, including `.git`. Import opens that folder, or another Git repository, as a user. v1 does not merge that repository into a user who is already open.
 
 ## What good feels like
 

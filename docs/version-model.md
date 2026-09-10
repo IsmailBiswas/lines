@@ -33,21 +33,34 @@ What belongs to a user stays with that user:
 
 None of that is visible while another user is open. Switching user is how separate work stays separate.
 
-Creating a user creates a new empty repository and asks for a free-text user name. Importing a local or remote repository adds it as a user, or opens that user if it is already known. Exporting the open user writes that repository out. Import never merges into the user who is already open.
+Creating a user creates a new empty Git repository (`git init`) and asks for a free-text user name. That folder is a real repository from the first moment, even before it has a variant.
 
-Do not invent a second database that can drift from Git. Git is the record inside each user.
+Exporting a user copies that whole repository, including the `.git` folder, to a folder the person chooses. The export is a normal Git repository. Anyone can open it with Git. This app can import that same folder as a new user.
+
+Importing a local folder requires it to already be a Git repository. Importing a remote clones it. Import never merges into the user who is already open.
+
+Do not invent a second database that can drift from Git. Git is the record inside each user. The catalog only remembers names and paths.
 
 Switching user follows the same write-first rule as switching variant or version. If the write fails, stay on the current user.
 
 ## Variant
 
-A variant is a Git branch. The user chooses its name when they create or import it. That name is the branch name. It is free text.
+A variant is a Git branch. The name the person types is the branch name. It is free text.
 
-The sidebar lists variants of the open user. They can search that list by name. Selecting a variant opens it: the app switches to that branch and shows its versions (the commits on that branch).
+The sidebar lists variants of the open user. They can search that list by name. Selecting a variant opens it: the app switches to that branch and shows **this variant's** versions.
+
+A later variant starts at the version it was created from. Git still keeps the older parent commits (that is real history). The UI does not show those parents. It shows the starting version and anything written after it on this variant.
+
+The starting version is stored in the repository as a Git ref for that branch. It is not a second database. The original variant keeps its own start, so its older versions stay visible even after another variant is created from its latest version.
 
 Variant names should stay readable in a compact sidebar. Do not encode dates or file types into the name unless the user types them.
 
-Creating a variant creates the branch and its first version. That first version contains the resume HTML. It does not contain a cover letter or additional documents unless the user imported and mapped those files.
+There are two ways a variant appears:
+
+1. **First variant, empty user only.** Create a new HTML resume, or import HTML files. That creates the first branch and its first commit. After the user has any variant, HTML import is gone.
+2. **Later variants.** A new variant is a Git branch created from an existing version (commit). The three-dot control on a version asks for a name, then creates a branch that starts at that commit. It does not start from thin air and it does not start from whatever branch happens to be open.
+
+Do not offer a + control that creates an empty variant after work already exists.
 
 ## Version
 
@@ -71,13 +84,18 @@ Unsaved is a version. In Git it is a commit with the message `unsaved`. It sits 
 
 How it is written:
 
-- If the user starts editing a **finished** version, the app creates a new Unsaved version: a new commit with message `unsaved`.
+- If the user starts editing a **finished** version, the app creates a new Unsaved version: a new commit with message `unsaved`. That finished version can be any version on the variant, not only the latest.
+- Save keeps that new work on the same variant. Versions that were already on the variant stay listed.
 - If the user selects an **Unsaved** version and keeps editing, the app amends that same commit. It does not create another commit.
-- The same write happens when they save on purpose, try to open another version, try to open another variant, try to switch user, or try to close the application.
+- The same Unsaved write happens when they try to open another version, try to open another variant, try to switch user, or try to close the application.
 - If there is nothing to write, do not create or amend anything.
 - If the write fails, do not complete the switch or the quit. Tell the user and keep Unsaved selected.
 
-After a successful write, Unsaved stays Unsaved. Saving does not rename the commit into a finished version. The row remains the `unsaved` commit, now holding the latest files.
+Save is different. Save asks for a version name, then turns the current work into a finished version: a commit with that message. Unsaved goes away. The name cannot be empty and cannot be `unsaved`.
+
+The three-dot control on Unsaved is Delete Unsaved, not Create variant. A later variant starts only from a finished version. Deleting Unsaved drops that commit and opens the finished version it came from. That is the only way Unsaved work is thrown away.
+
+Switching and quitting still keep unnamed work as Unsaved so nothing is lost.
 
 ## Switching
 

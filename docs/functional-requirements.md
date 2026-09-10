@@ -17,19 +17,22 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 - On later launches, the app opens the last user and that user's last place.
 - The person can switch to another known user.
 - The person can create a new user. That creates a new empty repository.
-- The person can import a local or remote Git repository as a user. If that repository is already a known user, open that user.
+- The person can import a local Git repository folder as a user. That folder must already be a Git repository, including one this app exported. If it is already a known user, open that user.
+- The person can import a remote Git repository as a user by cloning it.
 - Importing a repository does not merge it into the user who is already open.
-- The person can export the open user as a Git repository.
+- The person can export the open user to a folder. That folder is a real Git repository and can be imported again as a user.
 - Switching user writes Unsaved on the current user first. If that write fails, the app does not switch.
 
 ## Variants
 
-- The user can create a new variant by giving it a name. That name is the Git branch name. That creates a new HTML resume only.
-- The user can import one or more HTML files into a new variant by giving the variant a name and choosing the files.
-- If several files are imported, the app asks the user to map each file to resume, cover letter, or additional document before finishing.
+- If the open user has no variants, the person can create the first variant by giving it a name. That creates the first Git branch and a first commit with a new HTML resume.
+- If the open user has no variants, the person can import one or more HTML files as the first variant. If several files are imported, a mapping step asks which file is resume, cover letter, or additional.
+- After the user has any variant, HTML import is not available.
+- After the user has any variant, a new variant is created only from a finished version: the three-dot control on that version, then a name. In Git this is a new branch starting at that commit. Unsaved does not offer Create variant.
+- There is no + control that creates a variant from nothing once the user has work.
 - The sidebar lists variants by name.
 - The user can search the sidebar list by variant name.
-- Selecting a variant opens that variant and shows its versions.
+- Selecting a variant opens that variant and shows its versions: the starting version and anything after it on that variant. The variant it was created from still shows its own older versions.
 - Variant names are free text chosen by the user. The app does not rename them in the background and does not suggest role or company patterns.
 
 ## Versions
@@ -37,7 +40,7 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 - Each variant has a history of versions. Each version is a Git commit.
 - Selecting a version shows the files in that commit in the editor and preview.
 - A version contains every document that existed at that moment: the resume, plus cover letter and additional documents only if they exist.
-- Creating or importing a variant also creates the first version.
+- Creating or importing the first variant also creates the first version. A later variant starts at the version it was created from. That commit already exists.
 
 ## Documents
 
@@ -55,14 +58,16 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 - The main work area is a split view: editable HTML on the left, rendered preview on the right.
 - Changing the HTML updates the preview.
 - Preview is the document as a page, not a dump of tags.
-- Editing a finished version creates Unsaved. Editing Unsaved amends that same version.
+- Editing a finished version creates Unsaved. That finished version can be any version on the variant, not only the latest. Editing Unsaved amends that same version.
+- Saving that Unsaved writes a finished version on the same variant. Other versions already on the variant stay listed.
 
 ## Unsaved and writing
 
 - When the user starts changing a finished version, the sidebar shows an Unsaved row under that version.
 - Unsaved is a version: a Git commit with message `unsaved`. It is visually distinct from finished versions.
 - If the user selects Unsaved and continues editing, later writes amend that commit. They do not create a new commit.
-- The user can save on purpose. That writes Unsaved and leaves it selected.
+- The user can save on purpose. Save asks for a version name and writes a finished version with that name. Unsaved is gone after that.
+- The three-dot control on Unsaved is Delete Unsaved. It asks first, then drops that Unsaved commit and opens the finished version it came from. Finished versions cannot be deleted.
 - If they try to select another version, select another variant, switch user, or close the app while current files differ, the app writes first.
 - If there are no changes, the app does not create or amend a commit.
 - If a required write fails, the app does not switch or quit, and it tells the user why.
@@ -99,7 +104,6 @@ The following are not v1 features, even if they are easy to imagine:
 
 - Searching inside document text.
 - Comparing two versions side by side.
-- Making a new variant from an old version. A later release may want this; v1 does not require it.
 - Documents that are not HTML.
 - Attaching a PDF as an additional document.
 - Merging one user with another, or conflict resolution with a remote.

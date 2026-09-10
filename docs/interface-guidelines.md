@@ -69,6 +69,7 @@ When the window is narrow:
 - Unsaved is a child of the finished version it came from, not a floating extra row.
 - Unsaved must be easy to spot: lighter structure, a clear label, and no chance of looking like a finished version.
 - Search sits at the top of the variant list and only promises to filter names.
+- After the user has work, do not show a + or import control in the sidebar. New variants come from the three-dot control on a version.
 - Selected variant and selected version must both be obvious. Selection is a shape and weight change, not a color shout.
 
 ## Tabs

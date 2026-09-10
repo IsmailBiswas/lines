@@ -25,11 +25,14 @@ Pretty code that drifts from the documents is not a good change.
 
 - A user is a Git repository and a complete workspace. The UI presents opening another repository as switching user.
 - A variant is a Git branch. A version is a Git commit. Unsaved is a commit whose message is `unsaved`.
+- HTML import and empty-variant create exist only on an empty user. Later variants are branches created from a chosen version.
+- Exporting a user copies a real Git repository, `.git` included. Importing a user requires a real Git repository.
 - Users do not share variants, versions, or documents. Never mix two repositories in one screen.
 - Editing a finished version creates Unsaved. Editing Unsaved amends that same commit.
+- Save asks for a version name and writes a finished commit. Switch and quit still write Unsaved.
 - Resume, cover letter, and every additional document that exists live in the same version. There is no cap on additional documents. Do not create empty ones.
 - HTML is the stored form. PDF is an export.
-- Write happens on purpose, on switch (version, variant, or user), and on quit. Failed write blocks the switch or quit.
+- Write happens on save (named), on switch (version, variant, or user), and on quit. Failed write blocks the switch or quit.
 - Search is variant-name search in v1.
 - The stack is Tauri: web UI in front, Rust for files, Git, and export.
 - UI uses the shared component set and a monochrome theme. Controls stay compact. Spacing follows an 8-point grid. The main work area follows a 12-column layout.
