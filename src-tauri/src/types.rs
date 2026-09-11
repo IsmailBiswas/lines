@@ -15,6 +15,8 @@ pub struct UserRecord {
     pub pdf_folder: Option<String>,
     #[serde(default)]
     pub pdf_name_pattern: Option<String>,
+    #[serde(default)]
+    pub remote_token: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -63,6 +65,8 @@ pub struct Workspace {
     pub current_tab: Option<String>,
     pub pdf_folder: Option<String>,
     pub pdf_name_pattern: Option<String>,
+    pub remote_url: Option<String>,
+    pub has_remote_token: bool,
 }
 
 impl Workspace {
@@ -78,8 +82,16 @@ impl Workspace {
             current_tab: None,
             pdf_folder: None,
             pdf_name_pattern: None,
+            remote_url: None,
+            has_remote_token: false,
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PdfExportItem {
+    pub name: String,
+    pub html: String,
 }
 
 #[derive(Debug, Deserialize)]

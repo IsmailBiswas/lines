@@ -114,6 +114,8 @@ pub fn workspace_from_user(
             current_tab: None,
             pdf_folder: user.pdf_folder.clone(),
             pdf_name_pattern: user.pdf_name_pattern.clone(),
+            remote_url: git_service::origin_url(&repo),
+            has_remote_token: has_remote_token(user),
         });
     }
 
@@ -157,5 +159,13 @@ pub fn workspace_from_user(
         current_tab,
         pdf_folder: user.pdf_folder.clone(),
         pdf_name_pattern: user.pdf_name_pattern.clone(),
+        remote_url: git_service::origin_url(&repo),
+        has_remote_token: has_remote_token(user),
     })
+}
+
+fn has_remote_token(user: &UserRecord) -> bool {
+    user.remote_token
+        .as_deref()
+        .is_some_and(|token| !token.trim().is_empty())
 }

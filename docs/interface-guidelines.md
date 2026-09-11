@@ -15,7 +15,7 @@ Use these in order when a layout decision is unclear:
 
 ## Theme
 
-- The app has two themes: light and dark. A compact header control switches between them. The last choice is remembered on this machine.
+- The app has two themes: light and dark. The switch lives in Settings (the cog). The last choice is remembered on this machine.
 - Chrome colors live in `src/theme/chrome.ts`. Editor highlight colors live in `src/theme/editor.ts`. Both themes use the same token names. Change values there when experimenting. Do not invent a third palette in a screen.
 - Syntax color lives only in the HTML editor. Do not spread those hues onto buttons, badges, or the sidebar.
 - The preview is the user's page. Do not restyle their resume to match the chrome.
@@ -25,7 +25,8 @@ Use these in order when a layout decision is unclear:
 ## Size and density
 
 - This is not a large-button, marketing-site layout.
-- Controls are compact. Padding should feel tight and even, not sparse and not crowded.
+- Type, icons, and list rows stay compact.
+- Larger regions (dialogs, the sidebar list, empty states, Settings) need 16–24px of space around them so the window does not feel rigid. Compact controls still sit inside that space.
 - Icons in the header and sidebar should be small and quiet. A label is better than a mystery icon when space allows.
 - Use Lucide for every action and document kind that has a clear meaning. Same action, same icon. Pair the icon with a label, or with a tooltip that uses the product word, on compact header actions.
 - Do not copy Bootstrap-sized primary buttons.
@@ -43,7 +44,7 @@ Default wide layout, left to right:
 
 1. Sidebar, with the current user and switch-user control at the top
 2. Document tabs plus the split view
-3. Export and other rare actions in the header, top right
+3. Settings, Sync, Export, and other rare actions in the header, top right
 
 Default split view:
 
@@ -64,6 +65,7 @@ When the window is narrow:
 - Switching user is a compact list of known users, plus create user and import user.
 - The selected user must be obvious. This is still a shape and weight change, not a color shout.
 - Do not design this like a cloud account menu. There is no avatar store, no sign-out, and no password.
+- Settings is a cog menu. Theme lives there. The open user's remote is a short dialog from that menu, not a preference page.
 
 ## Sidebar
 
@@ -74,7 +76,8 @@ When the window is narrow:
 - Version rows show the name only. The created time is a tooltip on hover.
 - Search sits at the top of the variant list and only promises to filter names.
 - After the user has work, do not show a + or import control in the sidebar. New variants come from the three-dot control on a version.
-- Selected variant and selected version must both be obvious. Selection is a shape and weight change, not a color shout.
+- Selected variant and selected version must both be obvious. The open variant and its versions share one quiet background so the group reads as one block. Selection is a shape and weight change, not a new hue.
+- Opening or closing a variant's versions should animate. Do not snap the list in or out.
 
 ## Tabs
 
@@ -93,10 +96,18 @@ When the window is narrow:
 
 ## Export modal
 
-- Short. Folder, file name, default hint, confirm, cancel.
+- Title only. Do not put explanatory copy under Export or Remote.
+- Accordion rows for resume file name, save location, and files. Each row is a text control with no outline. The chevron sits on the left of the label. Collapsed rows show the current value after a colon.
+- Files default to every document on the open variant, each with a checkbox.
 - Enter in a dialog text field submits that dialog's primary action.
-- The default path and name should be written as a sentence the user can trust, not as hidden behavior.
-- Setting a default is a secondary action, not a second page.
+- While PDFs are being written, keep the modal open and show a loader.
+- Remember the resume file name and save location on that user after a successful export.
+
+## Remote modal
+
+- Title only. URL and token fields sit on the dialog, not under a description.
+- Accordion row labeled Create Repository, same treatment as export rows: no outline, chevron on the left.
+- Expanding it shows a single-select for GitHub or GitLab, then copy for that host, then one Open button at the bottom right. Open only launches that host's new-repository page. The person creates the repository and an access token there, then pastes both into this dialog.
 
 ## Empty and first-run
 
@@ -131,5 +142,5 @@ When the window is narrow:
 - New accent colors "just for this badge." Syntax color stays in the editor.
 - Wide primary buttons in the header.
 - Extra settings that only exist to avoid making a default.
-- Git words in the sidebar or the user switcher.
+- Git words in the sidebar or the user switcher. Remote words stay in Settings.
 - A visual builder that turns the preview into the editor.

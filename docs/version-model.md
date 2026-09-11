@@ -30,6 +30,7 @@ What belongs to a user stays with that user:
 - Every document
 - That user's last place (variant, version, tab)
 - That user's PDF export defaults
+- That user's remote, when they have set one. The remote URL lives in the Git repository (`origin`). The token lives in the catalog, not in Git.
 
 None of that is visible while another user is open. Switching user is how separate work stays separate.
 
@@ -125,7 +126,7 @@ Search in the sidebar filters variants by name. It does not need to search insid
 
 A user exported from this app is a Git repository this app can open again as a user.
 
-Opening a remote means importing that whole repository as a user. v1 does not merge the current user with a remote and does not ask anyone to resolve conflicts.
+Opening a remote as import means importing that whole repository as a user. Sync on the open user pulls with a fast-forward only, then pushes, using the catalog token. v1 does not merge the current user with a remote and does not ask anyone to resolve conflicts. If the histories have diverged, sync fails and the local user stays as it is.
 
 Do not export a private file format that only this app can read. The Git repository is the portable form of a user.
 
@@ -140,6 +141,8 @@ Use these words in the UI:
 - Draft
 - Export
 - Import
+- Settings
+- Sync
 
 Avoid these words in the UI unless they are in a clearly technical settings area:
 
@@ -149,4 +152,4 @@ Avoid these words in the UI unless they are in a clearly technical settings area
 - Repo, unless they are importing a remote they already understand
 - Checkout, stash, merge, rebase, HEAD, amend
 
-Settings that open a remote can use normal remote words (remote, clone, import) because the user who does that already lives in that world.
+Settings that open a remote can use normal remote words (remote, GitHub, GitLab, clone, import) because the user who does that already lives in that world. Do not put those words in the sidebar or the user switcher.

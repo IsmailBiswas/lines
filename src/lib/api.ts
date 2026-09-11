@@ -68,18 +68,17 @@ export const api = {
     }),
   rememberTab: (tab: string) => invoke<void>("remember_tab", { tab }),
   exportPdf: (
-    html: string,
-    dest: string,
-    folder?: string,
-    namePattern?: string,
-    setDefault?: boolean,
+    items: { name: string; html: string }[],
+    destFolder: string,
+    resumeName: string,
   ) =>
     invoke<string>("export_pdf", {
-      html,
-      dest,
-      folder: folder ?? null,
-      namePattern: namePattern ?? null,
-      setDefault: setDefault ?? false,
+      items,
+      destFolder,
+      resumeName,
     }),
   downloadsDir: () => invoke<string>("downloads_dir"),
+  setRemote: (url: string, token: string) => invoke<Workspace>("set_remote", { url, token }),
+  syncUser: () => invoke<Workspace>("sync_user"),
+  openHostPage: (kind: "github" | "gitlab") => invoke<void>("open_host_page", { kind }),
 };

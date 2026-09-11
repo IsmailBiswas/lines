@@ -2,8 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use git2::{
-    BranchType, Commit, Cred, FetchOptions, ObjectType, RemoteCallbacks, Repository, Signature,
-    TreeWalkMode, TreeWalkResult,
+    BranchType, Commit, Cred, FetchOptions, ObjectType, Oid, PushOptions, RemoteCallbacks,
+    Repository, Signature, TreeWalkMode, TreeWalkResult,
 };
 
 use crate::error::{AppError, AppResult};
@@ -628,6 +628,199 @@ fn unsaved_commit<'repo>(repo: &'repo Repository, branch: &str) -> AppResult<Opt
             }
         }
     }
+}
+
+pub fn origin_url(repo: &Repository) -> Option<String> {
+    repo.find_remote("origin")
+        .ok()
+        .and_then(|remote| remote.url().map(|url| url.to_string()))
+        .filter(|url| !url.is_empty())
+}
+
+pub fn set_origin_url(repo: &Repository, url: &str) -> AppResult<()> {
+    let url = url.trim();
+    if url.is_empty() {
+        return Err(AppError::msg("Enter a remote address."));
+    }
+    if url.contains('\n') || url.contains('\r') || url.contains(' ') {
+        return Err(AppError::msg("That remote address is not valid."));
+    }
+    if url.starts_with("git@") || url.starts_with("ssh://") {
+        return Err(AppError::msg(
+            "Use an HTTPS repository URL. Sync uses the token, not SSH.",
+        ));
+    }
+    if repo.find_remote("origin").is_ok() {
+        repo.remote_set_url("origin", url)?;
+    } else {
+        repo.remote("origin", url)?;
+    }
+    Ok(())
+}
+
+pub fn sync_origin(repo: &Repository, token: Option<&str>) -> AppResult<()> {
+    pull_origin(repo, token)?;
+    push_origin(repo, token)?;
+    Ok(())
+}
+
+fn remote_callbacks(token: Option<&str>) -> RemoteCallbacks<'static> {
+    let token = token
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(move |url, username, allowed| {
+        if let Some(token) = &token {
+            let user = token_username(url);
+            if allowed.contains(git2::CredentialType::USERNAME) {
+                return Cred::username(user);
+            }
+            if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) {
+                return Cred::userpass_plaintext(user, token);
+            }
+        }
+        if allowed.contains(git2::CredentialType::SSH_KEY) {
+            return Cred::ssh_key_from_agent(username.unwrap_or("git"));
+        }
+        if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) {
+            let cfg = git2::Config::open_default()?;
+            return Cred::credential_helper(&cfg, url, username);
+        }
+        Cred::default()
+    });
+    callbacks
+}
+
+fn token_username(url: &str) -> &'static str {
+    if url.to_ascii_lowercase().contains("gitlab") {
+        "oauth2"
+    } else {
+        "x-access-token"
+    }
+}
+
+pub fn pull_origin(repo: &Repository, token: Option<&str>) -> AppResult<()> {
+    let mut remote = repo.find_remote("origin").map_err(|_| {
+        AppError::msg("This user has no remote yet. Add one in Settings.")
+    })?;
+    let mut fetch = FetchOptions::new();
+    fetch.remote_callbacks(remote_callbacks(token));
+    match remote.fetch(
+        &["refs/heads/*:refs/remotes/origin/*"],
+        Some(&mut fetch),
+        None,
+    ) {
+        Ok(()) => {}
+        Err(error) if is_empty_remote(&error) => return Ok(()),
+        Err(error) => return Err(map_push_error(error)),
+    }
+    let remotes = repo.branches(Some(BranchType::Remote))?;
+    for (branch, _) in remotes.filter_map(Result::ok) {
+        let Some(name) = branch.name()? else {
+            continue;
+        };
+        let Some(short) = name.strip_prefix("origin/") else {
+            continue;
+        };
+        if short == "HEAD" {
+            continue;
+        }
+        let oid = branch.get().peel_to_commit()?.id();
+        fast_forward_branch(repo, short, oid)?;
+    }
+    Ok(())
+}
+
+fn fast_forward_branch(repo: &Repository, branch: &str, remote_oid: Oid) -> AppResult<()> {
+    match repo.find_branch(branch, BranchType::Local) {
+        Ok(local) => {
+            let local_oid = local.get().peel_to_commit()?.id();
+            if local_oid == remote_oid {
+                return Ok(());
+            }
+            if repo.graph_descendant_of(remote_oid, local_oid)? {
+                repo.reference(
+                    &format!("refs/heads/{branch}"),
+                    remote_oid,
+                    true,
+                    "sync pull",
+                )?;
+                return Ok(());
+            }
+            if repo.graph_descendant_of(local_oid, remote_oid)? {
+                return Ok(());
+            }
+            Err(AppError::msg(
+                "The remote has other work. This app does not merge. Import that remote as another user.",
+            ))
+        }
+        Err(_) => {
+            let commit = repo.find_commit(remote_oid)?;
+            repo.branch(branch, &commit, false)?;
+            Ok(())
+        }
+    }
+}
+
+fn is_empty_remote(error: &git2::Error) -> bool {
+    let text = error.message().to_lowercase();
+    text.contains("couldn't find remote ref")
+        || text.contains("no matching")
+        || text.contains("unborn")
+        || text.contains("does not have any refs")
+}
+
+pub fn push_origin(repo: &Repository, token: Option<&str>) -> AppResult<()> {
+    let mut remote = repo.find_remote("origin").map_err(|_| {
+        AppError::msg("This user has no remote yet. Add one in Settings.")
+    })?;
+    let specs = push_refspecs(repo)?;
+    if specs.is_empty() {
+        return Err(AppError::msg("There is nothing to sync yet."));
+    }
+    let mut options = PushOptions::new();
+    options.remote_callbacks(remote_callbacks(token));
+    remote
+        .push(&specs, Some(&mut options))
+        .map_err(map_push_error)?;
+    Ok(())
+}
+
+fn push_refspecs(repo: &Repository) -> AppResult<Vec<String>> {
+    let mut specs = Vec::new();
+    for reference in repo.references()?.filter_map(|item| item.ok()) {
+        let Some(name) = reference.name() else {
+            continue;
+        };
+        if name.starts_with("refs/heads/") || name.starts_with("refs/rt/") {
+            specs.push(format!("{name}:{name}"));
+        }
+    }
+    Ok(specs)
+}
+
+fn map_push_error(error: git2::Error) -> AppError {
+    let text = error.message().to_lowercase();
+    if text.contains("auth")
+        || text.contains("credential")
+        || text.contains("permission")
+        || text.contains("authentication")
+    {
+        return AppError::msg(
+            "The remote did not accept the token. Check the URL and token in Settings.",
+        );
+    }
+    if text.contains("non-fast-forward")
+        || text.contains("rejected")
+        || text.contains("fetch first")
+        || text.contains("updates were rejected")
+    {
+        return AppError::msg(
+            "The remote has other work. This app does not merge. Import that remote as another user.",
+        );
+    }
+    AppError::msg(format!("Sync failed. {error}"))
 }
 
 #[cfg(test)]

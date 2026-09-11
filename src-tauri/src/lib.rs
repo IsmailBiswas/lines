@@ -43,6 +43,9 @@ pub fn run() {
             commands::add_document,
             commands::remember_tab,
             commands::export_pdf,
+            commands::set_remote,
+            commands::sync_user,
+            commands::open_host_page,
             commands::downloads_dir,
         ])
         .run(tauri::generate_context!())

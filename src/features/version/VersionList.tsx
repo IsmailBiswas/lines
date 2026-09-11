@@ -56,7 +56,7 @@ export function VersionList({
             className={cn(
               "group flex w-full items-center gap-1 rounded-sm pr-1 text-xs",
               row.indent && "pl-4",
-              selected ? "bg-accent font-medium" : "hover:bg-accent/60",
+              selected ? "bg-background/70 font-medium" : "hover:bg-background/50",
               row.version.is_unsaved && "italic text-muted-foreground",
             )}
           >

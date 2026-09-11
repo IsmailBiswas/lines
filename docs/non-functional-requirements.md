@@ -36,7 +36,7 @@ If a later version history is very long, keep the sidebar usable. Do not load th
 ## Clear in a small window and a large one
 
 - The same product must work in a wide desktop window and in a narrow window.
-- In a narrow window, they must still reach switch user, variants, versions, tabs, editor, preview, and export. It is acceptable to stack or collapse regions. It is not acceptable to hide a required action with no way to open it.
+- In a narrow window, they must still reach switch user, variants, versions, tabs, editor, preview, Settings, Sync, and export. It is acceptable to stack or collapse regions. It is not acceptable to hide a required action with no way to open it.
 - Touch targets and click targets stay usable when the window is compact. Compact is not the same as cramped.
 
 ## Interface quality
@@ -57,15 +57,16 @@ The detailed rules live in `interface-guidelines.md`. The quality bar is:
 ## Accessible enough for daily use
 
 - Text and chrome must meet a strong contrast standard in both themes. A dark theme is not an excuse for low-contrast gray on gray.
-- Keyboard users must be able to move between switch user, sidebar, tabs, editor, and the export action.
+- Keyboard users must be able to move between switch user, sidebar, tabs, editor, Settings, Sync, and the export action.
 - Focus must be visible.
 - The preview is content. The surrounding app chrome should not trap keyboard focus inside the preview with no way out.
 
 ## Safe with files and remotes
 
 - File pickers and export dialogs may only write where the user confirmed.
-- Do not send a user's content anywhere unless they start a remote action.
-- Do not store remote credentials in that user's repository.
+- Do not send a user's content anywhere unless they start a remote action. Sync is that action.
+- Do not store remote credentials in that user's Git repository. The token lives in the app catalog.
+- Do not sign the person into this app. A remote token is only for pull and push.
 - Treat imported HTML as untrusted content in the preview. A resume should not become a way to run unexpected code in the app.
 
 ## Maintainable by one person

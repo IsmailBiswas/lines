@@ -7,7 +7,7 @@ use crate::document_service;
 use crate::error::{AppError, AppResult};
 use crate::git_service;
 use crate::pdf_service;
-use crate::types::{DocumentFile, MappedImport, Workspace};
+use crate::types::{DocumentFile, MappedImport, PdfExportItem, Workspace};
 use crate::user_service;
 use crate::write_service;
 
@@ -338,26 +338,65 @@ pub fn remember_tab(app: AppHandle, tab: String) -> AppResult<()> {
 #[tauri::command]
 pub fn export_pdf(
     app: AppHandle,
-    html: String,
-    dest: String,
-    folder: Option<String>,
-    name_pattern: Option<String>,
-    set_default: bool,
+    items: Vec<PdfExportItem>,
+    dest_folder: String,
+    resume_name: String,
 ) -> AppResult<String> {
-    pdf_service::export_html(&app, &html, PathBuf::from(&dest).as_path())?;
-    if set_default {
-        let data = app_data(&app)?;
-        let catalog = catalog::load_catalog(&data)?;
-        if let Some(id) = catalog.current_user_id {
-            user_service::remember_pdf_defaults(
-                &data,
-                &id,
-                folder.as_deref(),
-                name_pattern.as_deref(),
-            )?;
-        }
+    if items.is_empty() {
+        return Err(AppError::msg("Select at least one file to export."));
     }
-    Ok(dest)
+    let packet = pdf_service::export_htmls(&app, &items, PathBuf::from(&dest_folder).as_path(), &resume_name)?;
+    let data = app_data(&app)?;
+    let catalog = catalog::load_catalog(&data)?;
+    if let Some(id) = catalog.current_user_id {
+        user_service::remember_pdf_defaults(&data, &id, Some(&dest_folder), Some(&resume_name))?;
+    }
+    Ok(packet)
+}
+
+#[tauri::command]
+pub fn set_remote(app: AppHandle, url: String, token: String) -> AppResult<Workspace> {
+    let data = app_data(&app)?;
+    let catalog = catalog::load_catalog(&data)?;
+    let id = catalog
+        .current_user_id
+        .clone()
+        .ok_or_else(|| AppError::msg("No user is open."))?;
+    let user = catalog::find_user(&catalog, &id)?.clone();
+    let repo = git_service::open_repository(PathBuf::from(&user.path).as_path())?;
+    git_service::set_origin_url(&repo, &url)?;
+    if !token.trim().is_empty() {
+        user_service::remember_remote_token(&data, &id, &token)?;
+    } else if user.remote_token.as_deref().map(str::trim).unwrap_or("").is_empty() {
+        return Err(AppError::msg("Enter a token."));
+    }
+    let catalog = catalog::load_catalog(&data)?;
+    let user = catalog::find_user(&catalog, &id)?.clone();
+    document_service::workspace_from_user(user_service::summaries(&catalog), &user, None, None, None)
+}
+
+#[tauri::command]
+pub fn sync_user(app: AppHandle) -> AppResult<Workspace> {
+    let data = app_data(&app)?;
+    let catalog = catalog::load_catalog(&data)?;
+    let id = catalog
+        .current_user_id
+        .clone()
+        .ok_or_else(|| AppError::msg("No user is open."))?;
+    let user = catalog::find_user(&catalog, &id)?.clone();
+    let repo = git_service::open_repository(PathBuf::from(&user.path).as_path())?;
+    git_service::sync_origin(&repo, user.remote_token.as_deref())?;
+    document_service::workspace_from_user(user_service::summaries(&catalog), &user, None, None, None)
+}
+
+#[tauri::command]
+pub fn open_host_page(kind: String) -> AppResult<()> {
+    let url = match kind.as_str() {
+        "github" => "https://github.com/new",
+        "gitlab" => "https://gitlab.com/projects/new",
+        _ => return Err(AppError::msg("Choose GitHub or GitLab.")),
+    };
+    open::that(url).map_err(|_| AppError::msg("The browser could not be opened."))
 }
 
 #[tauri::command]

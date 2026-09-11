@@ -33,6 +33,7 @@ Keep these apart. Mixing them is how the app starts lying.
 - Which user is open
 - Each user's last place: variant, version, tab
 - Each user's PDF export defaults
+- Each user's remote token, when they have set one
 
 **User record** is the Git repository. It only knows:
 
@@ -55,6 +56,7 @@ src/                         Frontend
   features/document/         Tabs, add cover letter, add additional
   features/editor/           HTML text and preview
   features/export/           PDF modal
+  features/settings/         Settings menu, theme, remote
   theme/                     Light and dark chrome tokens, editor palettes, switch
   lib/icons.ts               One place that names Lucide icons for this app
 src-tauri/                   Rust
@@ -125,6 +127,8 @@ It must be able to:
 - Refuse to amend a finished commit
 - Export by copying the whole repository, including `.git`, to a chosen folder
 - Refuse to import a folder that is not a Git repository
+- Read and set `origin` on the open user
+- Pull remote heads with a fast-forward only, then push every variant and this app's internal refs to `origin`. Use the catalog token. Do not merge.
 
 Product words stay in the frontend. This service can think in branch and commit.
 
@@ -144,6 +148,7 @@ Call this before:
 - Opening another version
 - Opening another variant
 - Switching user
+- Sync
 - Quitting the window
 
 Do not write this logic in four frontend handlers. The window-close hook in Tauri must call the same command.
@@ -197,6 +202,7 @@ Keep the frontend on a short list. Suggested commands:
 - List versions, open version, write Unsaved, finish a named version
 - Add cover letter, add additional document
 - Export PDF
+- Set the open user's remote, sync the open user, open GitHub or GitLab in the browser
 - Choose folder, choose files
 
 If a new command would let the UI create commits itself, stop. That belongs in the write service.
@@ -209,10 +215,10 @@ If a new command would let the UI create commits itself, stop. That belongs in t
 - Variant search and list
 - Versions under the open variant, slightly indented, each with a three-dot control to create a variant from a finished version or delete Draft
 - Document tabs
-- Header actions on the right: create new version, export
+- Header actions on the right: Settings, Sync, create new version, export
 - Split view: editor left, preview right, both resizable. Preview has zoom and opens fitted to the pane.
 
-Narrow windows may collapse the sidebar. Switch user, tabs, editor, preview, and export must still be reachable.
+Narrow windows may collapse the sidebar. Switch user, tabs, editor, preview, Settings, Sync, and export must still be reachable.
 
 ### App state
 
@@ -225,6 +231,7 @@ Hold only what the screen needs:
 - Current version
 - Documents on that version
 - Current tab
+- The open user's remote, if set
 - Whether the editor differs from the selected version
 - Busy and error for the last action
 
@@ -242,12 +249,13 @@ Keep them short and reuse the same shells. A text field submits the primary acti
 - Import HTML files, then a mapping step if there are several
 - Add additional document (name)
 - Export PDF
+- Remote (from Settings)
 
 ### Editor
 
 The HTML editor is CodeMirror 6. Highlighting follows the open theme. Do not add a formatting toolbar. Preview updates as they type. The preview iframe is sandboxed (no scripts). Same-origin is allowed only so the pane can measure the page and fit or zoom it. The preview fills its pane with no inner card or padding. The preview is the user's page, not a restyle of it.
 
-Theme switch is a header control. It writes `light` or `dark` on this machine and applies tokens from `src/theme/chrome.ts` and `src/theme/editor.ts`. First open follows the system theme if nothing is stored yet.
+Theme switch lives in Settings. It writes `light` or `dark` on this machine and applies tokens from `src/theme/chrome.ts` and `src/theme/editor.ts`. First open follows the system theme if nothing is stored yet.
 
 ## Icons
 
@@ -277,14 +285,19 @@ Use the same icon for the same action everywhere.
 | Preview zoom in | `ZoomIn` | Zoom in |
 | Preview zoom out | `ZoomOut` | Zoom out |
 | Preview fit | `Maximize` | Fit |
+| Settings | `Settings` | Settings |
 | Use light theme | `Sun` | Light |
 | Use dark theme | `Moon` | Dark |
+| Create repository | `ChevronUp` | Create Repository |
+| Open host page | `ExternalLink` | Open |
+| Sync | `RefreshCw` | Sync |
 | Resume tab | `FileText` | Resume |
 | Cover letter tab | `Mail` | Cover letter |
 | Additional document tab | `File` | Document name |
 | Add cover letter | `MailPlus` | Add cover letter |
 | Add additional document | `FilePlus` | Add document |
 | Export PDF | `FileDown` | Export |
+| Accordion expand | `ChevronUp` | Resume file name, Save location, Files, Create Repository |
 | Close dialog | `X` | Close |
 | Confirm | keep the button label, no extra icon required | Export, Create, Import |
 | Empty create | `Plus` | Create new |
@@ -293,7 +306,7 @@ Use the same icon for the same action everywhere.
 | Failed action | `AlertCircle` | The error text still does the talking |
 | Busy | `LoaderCircle` | The action name |
 
-Do not use `GitBranch`, `GitCommit`, or `GitMerge` in the main UI. Those leak Git.
+Do not use `GitBranch`, `GitCommit`, `GitMerge`, `Github`, or `Gitlab` in the main UI. Those leak Git.
 
 Put the chosen names in `src/lib/icons.ts` (or the equivalent) so screens do not pick random Lucide icons later.
 

@@ -36,6 +36,7 @@ pub fn create_user(app_data: &Path, name: &str) -> AppResult<(Catalog, UserRecor
         last_tab: None,
         pdf_folder: None,
         pdf_name_pattern: None,
+        remote_token: None,
     };
     catalog.users.push(user.clone());
     catalog.current_user_id = Some(id);
@@ -74,6 +75,7 @@ pub fn import_local(app_data: &Path, name: &str, source: &Path) -> AppResult<(Ca
         last_tab: None,
         pdf_folder: None,
         pdf_name_pattern: None,
+        remote_token: None,
     };
     catalog.users.push(user.clone());
     catalog.current_user_id = Some(id);
@@ -104,6 +106,7 @@ pub fn import_remote(app_data: &Path, name: &str, url: &str) -> AppResult<(Catal
         last_tab: None,
         pdf_folder: None,
         pdf_name_pattern: None,
+        remote_token: None,
     };
     catalog.users.push(user.clone());
     catalog.current_user_id = Some(id);
@@ -169,5 +172,16 @@ pub fn remember_pdf_defaults(
     if let Some(name_pattern) = name_pattern {
         user.pdf_name_pattern = Some(name_pattern.to_string());
     }
+    catalog::save_catalog(app_data, &catalog)
+}
+
+pub fn remember_remote_token(app_data: &Path, user_id: &str, token: &str) -> AppResult<()> {
+    let token = token.trim();
+    if token.is_empty() {
+        return Err(AppError::msg("Enter a token."));
+    }
+    let mut catalog = catalog::load_catalog(app_data)?;
+    let user = catalog::find_user_mut(&mut catalog, user_id)?;
+    user.remote_token = Some(token.to_string());
     catalog::save_catalog(app_data, &catalog)
 }

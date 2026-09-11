@@ -15,7 +15,7 @@ Once the open user has at least one variant, the window has four jobs:
 3. **Document tabs** — move between the resume and any other HTML documents on that version.
 4. **Split view** — HTML on the left, rendered preview on the right.
 
-The export control lives at the top right of the main screen, not inside the sidebar.
+Export, Sync, and Settings live at the top right of the main screen, not inside the sidebar.
 
 ```mermaid
 flowchart LR
@@ -245,21 +245,55 @@ There is no empty cover letter tab and no reserved additional tab. Those appear 
 ```mermaid
 flowchart TD
   click[User clicks export at the top right]
-  modal[Modal asks for folder and file name]
-  hint[Modal also offers a default folder and name]
+  modal[Modal lists every document on the open variant]
+  rows[Accordion rows for resume name, save location, and files]
+  pick[User can deselect files]
   confirm[User confirms]
-  write[Write a PDF of the open document]
+  wait[Modal shows a loader]
+  write[Write a folder of PDFs]
   done[Return to the main screen]
 
-  click --> modal --> hint --> confirm --> write --> done
+  click --> modal --> rows --> pick --> confirm --> wait --> write --> done
 ```
 
 Defaults:
 
 - Folder: the user's Downloads folder, unless they have set a default.
-- Name: taken from the HTML document they are exporting.
+- Resume file name: remembered on that user after an export.
+- Files: every document on the open variant, each checked.
 
-The modal should make the default obvious and let the user set a new default for next time.
+The PDFs land in a folder named from the resume file name, inside the save location. Collapsed accordion rows show the current value after a colon. The chevron sits on the left of the label. The modal stays up with a loader until the write finishes.
+
+## Set a remote and sync
+
+```mermaid
+flowchart TD
+  settings[User opens Settings]
+  theme[They can switch theme there]
+  remote[They open Remote]
+  create[They can expand Create Repository, pick GitHub or GitLab, and Open]
+  fields[They enter a private repository URL and a token]
+  save[Save remote and token]
+  sync[User clicks Sync]
+  write[Write Draft if the files differ]
+  pull[Pull with a fast-forward only]
+  push[Push this user to the remote]
+  fail[If the histories diverged, stay here and say so]
+
+  settings --> theme
+  settings --> remote --> create --> fields --> save
+  remote --> fields
+  sync --> write --> pull --> push
+  pull --> fail
+  push --> fail
+```
+
+Rules for this path:
+
+- The token is stored in the catalog, never in the user's Git repository.
+- The remote URL is stored as `origin` on this user.
+- Sync writes first, then pulls (fast-forward only), then pushes.
+- Sync stays reachable in a narrow window.
 
 ## Take the open user elsewhere
 

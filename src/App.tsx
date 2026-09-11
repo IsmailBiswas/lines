@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
+import { AccordionRow } from "@/components/ui/accordion-row";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,9 +17,11 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SplitEditor } from "@/features/editor/SplitEditor";
-import { ThemeToggle } from "@/theme";
+import { ExportPdfDialog } from "@/features/export/ExportPdfDialog";
+import { SettingsMenu } from "@/features/settings/SettingsMenu";
 import { UserSwitcher } from "@/features/user/UserSwitcher";
-import { buildVersionRows, VersionList } from "@/features/version/VersionList";
+import { VariantSidebar } from "@/features/variant/VariantSidebar";
+import { buildVersionRows } from "@/features/version/VersionList";
 import { api } from "@/lib/api";
 import { Icons } from "@/lib/icons";
 import type { DocumentFile, MappedImport, Workspace } from "@/lib/types";
@@ -35,6 +38,8 @@ const emptyWorkspace: Workspace = {
   current_tab: null,
   pdf_folder: null,
   pdf_name_pattern: null,
+  remote_url: null,
+  has_remote_token: false,
 };
 
 function useWideLayout() {
@@ -69,6 +74,9 @@ export default function App() {
   const [userName, setUserName] = useState("");
   const [variantName, setVariantName] = useState("");
   const [remoteUrl, setRemoteUrl] = useState("");
+  const [remoteToken, setRemoteToken] = useState("");
+  const [createRepoOpen, setCreateRepoOpen] = useState(false);
+  const [remoteHost, setRemoteHost] = useState<"github" | "gitlab">("github");
   const [fromVersionId, setFromVersionId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<
     | null
@@ -82,6 +90,7 @@ export default function App() {
     | "map-files"
     | "name-version"
     | "delete-unsaved"
+    | "remote"
   >(null);
   const [deleteUnsavedId, setDeleteUnsavedId] = useState<string | null>(null);
   const [versionName, setVersionName] = useState("");
@@ -90,7 +99,9 @@ export default function App() {
   const [extraName, setExtraName] = useState("");
   const [pdfName, setPdfName] = useState("");
   const [pdfFolder, setPdfFolder] = useState("");
-  const [setPdfDefault, setSetPdfDefault] = useState(false);
+  const [exportKeys, setExportKeys] = useState<string[]>([]);
+  const [exportSection, setExportSection] = useState<"name" | "location" | "files" | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
   const [downloads, setDownloads] = useState("");
 
   const dirty = useMemo(
@@ -373,29 +384,64 @@ export default function App() {
 
   async function openExportPdf() {
     const folder = workspace.pdf_folder || downloads;
-    const pattern = workspace.pdf_name_pattern || currentDocument?.name || "resume";
+    const pattern = workspace.pdf_name_pattern || "resume.pdf";
     setPdfFolder(folder);
     setPdfName(pattern.endsWith(".pdf") ? pattern : `${pattern}.pdf`);
-    setSetPdfDefault(false);
+    setExportKeys(documents.map((document) => document.key));
+    setExportSection(null);
     setDialog("export-pdf");
   }
 
   async function handleExportPdf() {
-    if (!currentDocument?.content) {
-      setError("There is no document to export.");
+    const selected = documents.filter((document) => exportKeys.includes(document.key));
+    if (!selected.length) {
+      setError("Select at least one file to export.");
       return;
     }
-    const dest = `${pdfFolder.replace(/\/$/, "")}/${pdfName}`;
-    setBusy(true);
+    setExportBusy(true);
     setError(null);
     try {
-      await api.exportPdf(currentDocument.content, dest, pdfFolder, pdfName, setPdfDefault);
+      await api.exportPdf(
+        selected.map((document) => ({
+          name: document.kind === "resume" ? pdfName : document.name,
+          html: document.content,
+        })),
+        pdfFolder,
+        pdfName,
+      );
+      setWorkspace((current) => ({
+        ...current,
+        pdf_folder: pdfFolder,
+        pdf_name_pattern: pdfName,
+      }));
       setDialog(null);
     } catch (cause) {
       setError(String(cause));
     } finally {
-      setBusy(false);
+      setExportBusy(false);
     }
+  }
+
+  function openRemote() {
+    setRemoteUrl(workspace.remote_url || "");
+    setRemoteToken("");
+    setCreateRepoOpen(false);
+    setRemoteHost("github");
+    setDialog("remote");
+  }
+
+  async function handleSetRemote() {
+    await run(() => api.setRemote(remoteUrl, remoteToken), () => {
+      setDialog(null);
+      setRemoteToken("");
+    });
+  }
+
+  async function handleSync() {
+    await run(async () => {
+      await persistIfNeeded();
+      return api.syncUser();
+    });
   }
 
   async function pickPdfFolder() {
@@ -422,7 +468,7 @@ export default function App() {
           <>
             <ResizablePanel defaultSize="22" minSize="16" maxSize="40" className="min-h-0">
               <aside className="flex h-full min-h-0 flex-col bg-background">
-                <div className="flex h-10 shrink-0 items-center border-b px-2">
+                <div className="flex h-10 shrink-0 items-center border-b px-4">
                   <UserSwitcher
                     users={workspace.users}
                     current={workspace.current_user}
@@ -433,7 +479,7 @@ export default function App() {
                   />
                 </div>
                 {workspace.current_user && workspace.variants.length > 0 ? (
-                  <div className="flex h-10 shrink-0 items-center gap-1 px-2">
+                  <div className="flex h-10 shrink-0 items-center gap-2 px-4">
                     <div className="relative flex-1">
                       <Icons.search className="pointer-events-none absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
                       <Input
@@ -446,43 +492,24 @@ export default function App() {
                   </div>
                 ) : null}
                 <ScrollArea className="min-h-0 flex-1">
-                  <div className="space-y-3 p-2">
-                    {filteredVariants.map((variant) => (
-                      <div key={variant.name}>
-                        <button
-                          type="button"
-                          onClick={() => void handleOpenVariant(variant.name)}
-                          className={cn(
-                            "flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-xs",
-                            variant.name === workspace.current_variant
-                              ? "bg-accent font-medium"
-                              : "hover:bg-accent/60",
-                          )}
-                        >
-                          <Icons.variant className="size-3.5" />
-                          <span className="truncate">{variant.name}</span>
-                        </button>
-                        {variant.name === workspace.current_variant ? (
-                          <div className="mt-1">
-                            <VersionList
-                              rows={versionRows}
-                              currentId={workspace.current_version}
-                              onSelect={(id) => void handleOpenVersion(id)}
-                              onCreateVariant={(id) => {
-                                setFromVersionId(id);
-                                setVariantName("");
-                                setDialog("create-variant-from");
-                              }}
-                              onDeleteUnsaved={(id) => {
-                                setDeleteUnsavedId(id);
-                                setDialog("delete-unsaved");
-                              }}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
+                  <VariantSidebar
+                    userId={workspace.current_user?.id ?? null}
+                    variants={filteredVariants}
+                    currentVariant={workspace.current_variant}
+                    versionRows={versionRows}
+                    currentVersion={workspace.current_version}
+                    onOpenVariant={(name) => void handleOpenVariant(name)}
+                    onSelectVersion={(id) => void handleOpenVersion(id)}
+                    onCreateVariant={(id) => {
+                      setFromVersionId(id);
+                      setVariantName("");
+                      setDialog("create-variant-from");
+                    }}
+                    onDeleteUnsaved={(id) => {
+                      setDeleteUnsavedId(id);
+                      setDialog("delete-unsaved");
+                    }}
+                  />
                 </ScrollArea>
               </aside>
             </ResizablePanel>
@@ -492,7 +519,7 @@ export default function App() {
 
         <ResizablePanel defaultSize={showSidebar ? "78" : "100"} minSize="40" className="min-h-0">
         <main className="flex h-full min-w-0 flex-col">
-          <header className="flex h-10 items-center gap-2 border-b px-2">
+          <header className="flex h-10 items-center gap-2 border-b px-4">
             <Button
               variant="ghost"
               size="icon"
@@ -543,7 +570,25 @@ export default function App() {
                 </>
               ) : null}
             </div>
-            <ThemeToggle />
+            <SettingsMenu hasUser={Boolean(workspace.current_user)} onRemote={openRemote} />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => void handleSync()}
+                  disabled={
+                    !workspace.current_user ||
+                    !workspace.remote_url ||
+                    !workspace.has_remote_token ||
+                    busy
+                  }
+                >
+                  {busy ? <Icons.busy className="animate-spin" /> : <Icons.sync />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Sync</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={() => void handleSave()} disabled={!canSave || busy}>
@@ -554,7 +599,12 @@ export default function App() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={() => void openExportPdf()} disabled={!currentDocument}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => void openExportPdf()}
+                  disabled={!documents.length || exportBusy}
+                >
                   <Icons.exportPdf />
                 </Button>
               </TooltipTrigger>
@@ -563,7 +613,7 @@ export default function App() {
           </header>
 
           {error ? (
-            <div className="flex items-center gap-2 border-b px-3 py-1.5 text-xs">
+            <div className="flex items-center gap-2 border-b px-4 py-2 text-xs">
               <Icons.error className="size-3.5" />
               {error}
             </div>
@@ -597,6 +647,7 @@ export default function App() {
       <Dialog open={dialog === "create-user"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (userName.trim() && !busy) void handleCreateUser();
@@ -606,9 +657,11 @@ export default function App() {
               <DialogTitle>Create user</DialogTitle>
               <DialogDescription>This starts a new workspace.</DialogDescription>
             </DialogHeader>
-            <Label htmlFor="user-name">User name</Label>
-            <Input id="user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
-            <Button type="submit" className="mt-3" disabled={!userName.trim() || busy}>
+            <div className="space-y-2">
+              <Label htmlFor="user-name">User name</Label>
+              <Input id="user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
+            </div>
+            <Button type="submit" disabled={!userName.trim() || busy}>
               Create
             </Button>
           </form>
@@ -618,6 +671,7 @@ export default function App() {
       <Dialog open={dialog === "import-user"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (busy) return;
@@ -629,18 +683,20 @@ export default function App() {
               <DialogTitle>Import user</DialogTitle>
               <DialogDescription>Open a whole repository as a user.</DialogDescription>
             </DialogHeader>
-            <Label htmlFor="import-user-name">User name</Label>
-            <Input id="import-user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
-            <Label htmlFor="remote-url" className="mt-2 block">
-              Remote, if you have one
-            </Label>
-            <Input
-              id="remote-url"
-              value={remoteUrl}
-              onChange={(event) => setRemoteUrl(event.target.value)}
-              placeholder="https://..."
-            />
-            <div className="mt-3 flex gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="import-user-name">User name</Label>
+              <Input id="import-user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="remote-url">Remote, if you have one</Label>
+              <Input
+                id="remote-url"
+                value={remoteUrl}
+                onChange={(event) => setRemoteUrl(event.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => void handleImportUserLocal()} disabled={busy}>
                 <Icons.importUser />
                 Local folder
@@ -656,6 +712,7 @@ export default function App() {
       <Dialog open={dialog === "create-variant"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (variantName.trim() && !busy) void handleCreateVariant();
@@ -665,9 +722,11 @@ export default function App() {
               <DialogTitle>Create</DialogTitle>
               <DialogDescription>Name this first resume line.</DialogDescription>
             </DialogHeader>
-            <Label htmlFor="variant-name">Name</Label>
-            <Input id="variant-name" value={variantName} onChange={(event) => setVariantName(event.target.value)} />
-            <Button type="submit" className="mt-3" disabled={!variantName.trim() || busy}>
+            <div className="space-y-2">
+              <Label htmlFor="variant-name">Name</Label>
+              <Input id="variant-name" value={variantName} onChange={(event) => setVariantName(event.target.value)} />
+            </div>
+            <Button type="submit" disabled={!variantName.trim() || busy}>
               Create
             </Button>
           </form>
@@ -680,7 +739,7 @@ export default function App() {
             <DialogTitle>Delete Draft</DialogTitle>
             <DialogDescription>This work will be gone.</DialogDescription>
           </DialogHeader>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-4 flex gap-2">
             <Button variant="outline" onClick={() => setDialog(null)} disabled={busy}>
               Keep
             </Button>
@@ -695,6 +754,7 @@ export default function App() {
       <Dialog open={dialog === "create-variant-from"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (variantName.trim() && !busy) void handleCreateVariantFrom();
@@ -704,13 +764,15 @@ export default function App() {
               <DialogTitle>Create variant</DialogTitle>
               <DialogDescription>This starts a new line from the chosen version.</DialogDescription>
             </DialogHeader>
-            <Label htmlFor="variant-from-name">Name</Label>
-            <Input
-              id="variant-from-name"
-              value={variantName}
-              onChange={(event) => setVariantName(event.target.value)}
-            />
-            <Button type="submit" className="mt-3" disabled={!variantName.trim() || busy}>
+            <div className="space-y-2">
+              <Label htmlFor="variant-from-name">Name</Label>
+              <Input
+                id="variant-from-name"
+                value={variantName}
+                onChange={(event) => setVariantName(event.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={!variantName.trim() || busy}>
               Create
             </Button>
           </form>
@@ -720,6 +782,7 @@ export default function App() {
       <Dialog open={dialog === "import-variant"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (variantName.trim() && !busy) void pickHtmlFiles();
@@ -729,13 +792,15 @@ export default function App() {
               <DialogTitle>Import</DialogTitle>
               <DialogDescription>Choose a name, then one or more HTML files.</DialogDescription>
             </DialogHeader>
-            <Label htmlFor="import-variant-name">Name</Label>
-            <Input
-              id="import-variant-name"
-              value={variantName}
-              onChange={(event) => setVariantName(event.target.value)}
-            />
-            <Button type="submit" className="mt-3" disabled={!variantName.trim() || busy}>
+            <div className="space-y-2">
+              <Label htmlFor="import-variant-name">Name</Label>
+              <Input
+                id="import-variant-name"
+                value={variantName}
+                onChange={(event) => setVariantName(event.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={!variantName.trim() || busy}>
               <Icons.importHtml />
               Choose files
             </Button>
@@ -749,7 +814,7 @@ export default function App() {
             <DialogTitle>Map files</DialogTitle>
             <DialogDescription>Say which file is the resume, cover letter, or additional.</DialogDescription>
           </DialogHeader>
-          <div className="max-h-64 space-y-2 overflow-auto">
+          <div className="mt-4 max-h-64 space-y-4 overflow-auto">
             {pendingFiles.map((file) => (
               <div key={file} className="space-y-1">
                 <p className="truncate text-[11px] text-muted-foreground">{file.split("/").pop()}</p>
@@ -767,7 +832,7 @@ export default function App() {
               </div>
             ))}
           </div>
-          <Button className="mt-3" onClick={() => void finishMappedImport()} disabled={busy}>
+          <Button className="mt-4" onClick={() => void finishMappedImport()} disabled={busy}>
             Import
           </Button>
         </DialogContent>
@@ -776,6 +841,7 @@ export default function App() {
       <Dialog open={dialog === "name-version"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (versionName.trim() && !busy) void handleFinishVersion();
@@ -785,13 +851,15 @@ export default function App() {
               <DialogTitle>Name this version</DialogTitle>
               <DialogDescription>This becomes the saved version name.</DialogDescription>
             </DialogHeader>
-            <Label htmlFor="version-name">Name</Label>
-            <Input
-              id="version-name"
-              value={versionName}
-              onChange={(event) => setVersionName(event.target.value)}
-            />
-            <Button type="submit" className="mt-3" disabled={!versionName.trim() || busy}>
+            <div className="space-y-2">
+              <Label htmlFor="version-name">Name</Label>
+              <Input
+                id="version-name"
+                value={versionName}
+                onChange={(event) => setVersionName(event.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={!versionName.trim() || busy}>
               Save
             </Button>
           </form>
@@ -801,6 +869,7 @@ export default function App() {
       <Dialog open={dialog === "add-doc"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (extraName.trim() && !busy) void handleAddNamedDocument();
@@ -809,49 +878,118 @@ export default function App() {
             <DialogHeader>
               <DialogTitle>Add document</DialogTitle>
             </DialogHeader>
-            <Label htmlFor="doc-name">Name</Label>
-            <Input id="doc-name" value={extraName} onChange={(event) => setExtraName(event.target.value)} />
-            <Button type="submit" className="mt-3" disabled={!extraName.trim() || busy}>
+            <div className="space-y-2">
+              <Label htmlFor="doc-name">Name</Label>
+              <Input id="doc-name" value={extraName} onChange={(event) => setExtraName(event.target.value)} />
+            </div>
+            <Button type="submit" disabled={!extraName.trim() || busy}>
               Add document
             </Button>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={dialog === "export-pdf"} onOpenChange={(open) => !open && setDialog(null)}>
-        <DialogContent>
+      <ExportPdfDialog
+        open={dialog === "export-pdf"}
+        busy={exportBusy}
+        documents={documents}
+        selectedKeys={exportKeys}
+        pdfName={pdfName}
+        pdfFolder={pdfFolder}
+        expanded={exportSection}
+        onOpenChange={(open) => !open && setDialog(null)}
+        onToggle={(section) => setExportSection((current) => (current === section ? null : section))}
+        onNameChange={setPdfName}
+        onFolderChange={setPdfFolder}
+        onBrowse={() => void pickPdfFolder()}
+        onToggleFile={(key) =>
+          setExportKeys((current) =>
+            current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+          )
+        }
+        onSubmit={() => void handleExportPdf()}
+      />
+
+      <Dialog open={dialog === "remote"} onOpenChange={(open) => !open && setDialog(null)}>
+        <DialogContent aria-describedby={undefined}>
           <form
+            className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
-              if (pdfFolder && pdfName && !busy) void handleExportPdf();
+              if (remoteUrl.trim() && (remoteToken.trim() || workspace.has_remote_token) && !busy) {
+                void handleSetRemote();
+              }
             }}
           >
             <DialogHeader>
-              <DialogTitle>Export</DialogTitle>
-              <DialogDescription>
-                By default this goes to {workspace.pdf_folder || downloads || "Downloads"} as{" "}
-                {workspace.pdf_name_pattern || currentDocument?.name || "the document name"}.
-              </DialogDescription>
+              <DialogTitle>Remote</DialogTitle>
             </DialogHeader>
-            <Label>Folder</Label>
-            <div className="flex gap-2">
-              <Input value={pdfFolder} onChange={(event) => setPdfFolder(event.target.value)} />
-              <Button type="button" variant="outline" onClick={() => void pickPdfFolder()}>
-                Browse
-              </Button>
-            </div>
-            <Label className="mt-2 block">File name</Label>
-            <Input value={pdfName} onChange={(event) => setPdfName(event.target.value)} />
-            <label className="mt-2 flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={setPdfDefault}
-                onChange={(event) => setSetPdfDefault(event.target.checked)}
+            <AccordionRow
+              label="Create Repository"
+              open={createRepoOpen}
+              onToggle={() => setCreateRepoOpen((open) => !open)}
+            >
+              <div className="inline-flex rounded-md bg-muted p-0.5">
+                {(
+                  [
+                    ["github", "GitHub"],
+                    ["gitlab", "GitLab"],
+                  ] as const
+                ).map(([host, label]) => (
+                  <button
+                    key={host}
+                    type="button"
+                    onClick={() => setRemoteHost(host)}
+                    className={cn(
+                      "rounded-sm px-2.5 py-1 text-xs",
+                      remoteHost === host ? "bg-background font-medium" : "text-muted-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {remoteHost === "github"
+                  ? "This opens GitHub's new-repository page. Create the repository and an access token there first, then paste the URL and token here."
+                  : "This opens GitLab's new-repository page. Create the repository and an access token there first, then paste the URL and token here."}
+              </p>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={() => void api.openHostPage(remoteHost)}
+                  disabled={busy}
+                >
+                  <Icons.openLink />
+                  Open
+                </Button>
+              </div>
+            </AccordionRow>
+            <div className="space-y-2">
+              <Label htmlFor="user-remote">Repository URL</Label>
+              <Input
+                id="user-remote"
+                value={remoteUrl}
+                onChange={(event) => setRemoteUrl(event.target.value)}
+                placeholder="https://github.com/you/resume.git"
               />
-              Set default path and name
-            </label>
-            <Button type="submit" className="mt-3" disabled={!pdfFolder || !pdfName || busy}>
-              Export
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="user-token">Token</Label>
+              <Input
+                id="user-token"
+                type="password"
+                value={remoteToken}
+                onChange={(event) => setRemoteToken(event.target.value)}
+                placeholder={workspace.has_remote_token ? "Token saved. Leave blank to keep it." : "Personal access token"}
+                autoComplete="off"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={!remoteUrl.trim() || (!remoteToken.trim() && !workspace.has_remote_token) || busy}
+            >
+              Save remote
             </Button>
           </form>
         </DialogContent>
@@ -876,10 +1014,10 @@ function EmptyState({
   onSecondary: () => void;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-10 text-center">
       <h1 className="text-sm font-medium">{title}</h1>
       <p className="max-w-sm text-xs text-muted-foreground">{copy}</p>
-      <div className="flex gap-2">
+      <div className="flex gap-4">
         <Button onClick={onPrimary}>
           <Icons.emptyCreate />
           {primary}

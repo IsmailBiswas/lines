@@ -33,6 +33,8 @@ export type Workspace = {
   current_tab: string | null;
   pdf_folder: string | null;
   pdf_name_pattern: string | null;
+  remote_url: string | null;
+  has_remote_token: boolean;
 };
 
 export type MappedImport = {

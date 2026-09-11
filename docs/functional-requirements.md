@@ -21,6 +21,8 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 - The person can import a remote Git repository as a user by cloning it.
 - Importing a repository does not merge it into the user who is already open.
 - The person can export the open user to a folder. That folder is a real Git repository and can be imported again as a user.
+- The person can set a remote on the open user from Settings by entering a private repository URL and a token. The token is stored with the catalog, not inside that user's Git repository.
+- Sync writes Draft if needed, then uses the token to pull (fast-forward only) and push. It does not merge. If the remote has diverged, the action fails and the local user is unchanged.
 - Switching user writes Draft on the current user first. If that write fails, the app does not switch.
 
 ## Variants
@@ -75,11 +77,11 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 ## Export to PDF
 
 - From the main screen, the user can open an export action in the top right.
-- Export asks for a folder and a file name before writing the file.
-- The suggested folder is Downloads, unless the user has set a default folder.
-- The suggested file name comes from the document being exported.
-- The user can set a default folder and name pattern from that same modal.
-- Confirming export writes a PDF of the document in the open tab.
+- Export writes a PDF for each selected document on the open variant. By default every document on that variant is selected.
+- The PDFs go into a new folder inside the chosen save location. The folder name comes from the resume file name.
+- The modal uses compact accordion rows for resume file name, save location, and which files to export. The chevron sits on the left. A collapsed row shows the current value after a colon. There is no outline on those rows and no description under the title.
+- The suggested folder is Downloads, unless they have set a default. The suggested resume file name is remembered on that user when they export.
+- The modal shows a loader until every selected PDF is written.
 
 ## Returning to the app
 
@@ -95,6 +97,10 @@ These are product settings, not a junk drawer:
 - Default PDF export folder, stored on the current user.
 - Default PDF file name pattern, stored on the current user.
 - A way to create a user, switch user, and import a whole repository as a user.
+- Theme, in Settings, not as a standalone header control.
+- The open user's remote address, stored as that repository's `origin`.
+- That user's remote token, stored in the catalog.
+- Sync, which pulls (fast-forward) and pushes with that token.
 
 Do not add preference pages for things the interface can do directly.
 
@@ -107,6 +113,6 @@ The following are not v1 features, even if they are easy to imagine:
 - Documents that are not HTML.
 - Attaching a PDF as an additional document.
 - Merging one user with another, or conflict resolution with a remote.
-- Accounts, passwords, or signing in.
+- Signing in to this app. A remote token is host access for Sync, not an app login.
 - Two people editing the same user at once.
 - Sending email, applying to jobs, or talking to job boards.

@@ -1,8 +1,9 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use tauri::AppHandle;
 
 use crate::error::{AppError, AppResult};
+use crate::types::PdfExportItem;
 
 /// Same CSS width the preview iframe uses (`Preview.tsx` PAGE_WIDTH).
 const PAGE_WIDTH_PX: f64 = 794.0;
@@ -22,6 +23,42 @@ pub fn write_pdf_bytes(bytes: &[u8], dest: &Path) -> AppResult<()> {
 pub fn export_html(app: &AppHandle, html: &str, dest: &Path) -> AppResult<()> {
     let bytes = render_pdf(app, html)?;
     write_pdf_bytes(&bytes, dest)
+}
+
+pub fn export_htmls(
+    app: &AppHandle,
+    items: &[PdfExportItem],
+    dest_folder: &Path,
+    resume_name: &str,
+) -> AppResult<String> {
+    if items.is_empty() {
+        return Err(AppError::msg("Select at least one file to export."));
+    }
+    let packet = dest_folder.join(folder_stem(resume_name));
+    std::fs::create_dir_all(&packet)?;
+    for item in items {
+        let dest = packet.join(pdf_file_name(&item.name));
+        export_html(app, &item.html, dest.as_path())?;
+    }
+    Ok(packet.to_string_lossy().into_owned())
+}
+
+fn folder_stem(name: &str) -> String {
+    let stem = name.trim().trim_end_matches(".pdf").trim();
+    let cleaned: String = stem
+        .chars()
+        .filter(|ch| !matches!(ch, '/' | '\\' | ':' | '\0'))
+        .collect();
+    if cleaned.is_empty() {
+        "export".into()
+    } else {
+        cleaned
+    }
+}
+
+fn pdf_file_name(name: &str) -> PathBuf {
+    let stem = folder_stem(name);
+    PathBuf::from(format!("{stem}.pdf"))
 }
 
 fn render_pdf(app: &AppHandle, html: &str) -> AppResult<Vec<u8>> {
