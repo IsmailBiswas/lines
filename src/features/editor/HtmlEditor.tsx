@@ -27,7 +27,7 @@ export function HtmlEditor({ value, onChange }: Props) {
         autocompletion: false,
       }}
       className="html-editor h-full min-h-0"
-      aria-label="HTML editor"
+      aria-label="HTML Editor"
     />
   );
 }

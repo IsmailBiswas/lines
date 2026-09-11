@@ -15,7 +15,7 @@ Once the open user has at least one variant, the window has four jobs:
 3. **Document tabs** — move between the resume and any other HTML documents on that version.
 4. **Split view** — HTML on the left, rendered preview on the right.
 
-Export, Sync, and Settings live at the top right of the main screen, not inside the sidebar.
+Export and Settings live at the top right of the main screen, not inside the sidebar. Sync is inside Settings.
 
 ```mermaid
 flowchart LR
@@ -32,35 +32,33 @@ flowchart LR
 
 ## First launch, nothing here yet
 
-There are no users yet.
+There are no users yet. Bootstrap creates the first user automatically.
 
 ```mermaid
 flowchart TD
   openApp[App opens]
-  empty[Empty start screen]
-  userName[Ask for a user name]
-  choice{Create or import a variant?}
-  nameNew[Ask for a variant name]
-  nameImport[Ask for a variant name]
-  createHtml[Start a new HTML resume]
+  defaultUser[Create user Default]
+  choice[Empty variant screen: Create New or Import Existing]
+  createBase[Create variant Base with a new HTML resume]
+  importBase[Import HTML as variant Base]
   picker[Open a file picker for one or more HTML files]
   count{How many files?}
   oneFile[Use that file as the resume]
   mapModal[Ask which file is resume, cover letter, or additional]
-  main[Main screen: that user open, variant selected]
+  main[Main screen: Default open, variant selected]
 
-  openApp --> empty --> userName --> choice
-  choice -->|Create new| nameNew --> createHtml --> main
-  choice -->|Import existing| nameImport --> picker --> count
+  openApp --> defaultUser --> choice
+  choice -->|Create New| createBase --> main
+  choice -->|Import Existing| importBase --> picker --> count
   count -->|One file| oneFile --> main
   count -->|Several files| mapModal --> main
 ```
 
 Rules for this path:
 
-- The first name is the user name. That creates the first repository.
-- The second name is the variant name and the Git branch name.
-- Import accepts HTML only, and only while this user has no variants yet.
+- The first user is named Default. There is no user-name prompt on first launch.
+- Create New and Import Existing both make the first variant named Base. There is no variant-name prompt on either path.
+- Import accepts HTML only while this user has no variants yet.
 - One file becomes the resume. Several files go through a mapping modal: each file is resume, cover letter, or an additional document.
 - Do not create a cover letter or additional document that was not imported or added.
 - After the first variant exists, this import path is closed.
@@ -106,14 +104,16 @@ flowchart TD
   pick -->|An existing user| write --> openUser --> restore
   pick -->|Create user| write --> addNew --> emptyRepo --> emptyUser
   pick -->|Import user| write --> importRepo --> addUser --> restore
+  pick -->|Rename user| rename[Update the catalog name]
 ```
 
 Rules for this path:
 
 - Switching user opens another repository. It does not mix the two workspaces.
 - Write the current user first. If that write fails, do not switch.
-- A new user starts empty. They create or import a variant from that user's empty screen.
+- A new user starts empty. Create New and Import Existing both use Base.
 - Importing a repository adds a user. It does not fold those files into the user who was already open.
+- Rename User changes the display name in the catalog. The repository folder stays on its stable id.
 
 ## Browse variants and versions
 
@@ -137,13 +137,14 @@ If the current files differ from the selected version, selecting another variant
 flowchart TD
   menu[Three dots on a version]
   name[Ask for a variant name]
-  branch[Create a Git branch at that commit]
-  open[Open the new variant on that version]
+  branch[Create a Git branch from that commit]
+  draft[Create Draft with the same files]
+  open[Open the new variant on Draft]
 
-  menu --> name --> branch --> open
+  menu --> name --> branch --> draft --> open
 ```
 
-This is the only way to add a variant after the user already has work. The three-dot control is on a finished version, not on Draft. The new branch starts at the chosen commit, not at the tip of some other branch and not from an empty tree. The new variant lists that starting version and later versions on this line only. Older parent versions stay on the variant they came from.
+This is the only way to add a variant after the user already has work. The three-dot control is on a finished version, not on Draft. The new branch starts from the chosen commit, not at the tip of some other branch and not from an empty tree. The new variant lists only Draft until a finished version is created. The source version stays on the variant it came from and is not shown on the new line. That opening Draft cannot be deleted.
 
 ## Delete Draft
 
@@ -157,7 +158,7 @@ flowchart TD
   menu --> ask --> drop --> parent
 ```
 
-This is the only way unnamed work is thrown away. Save still names it. Switch and quit still write it.
+This is the only way unnamed work is thrown away, and only when Draft sits under a finished version on the same variant. The opening Draft on a new later variant has no Delete Draft. Save still names Draft. Switch and quit still write it.
 
 ## Edit a finished version
 
@@ -274,7 +275,7 @@ flowchart TD
   create[They can expand Create Repository, pick GitHub or GitLab, and Open]
   fields[They enter a private repository URL and a token]
   save[Save remote and token]
-  sync[User clicks Sync]
+  sync[User clicks Sync in Settings]
   write[Write Draft if the files differ]
   pull[Pull with a fast-forward only]
   push[Push this user to the remote]

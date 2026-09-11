@@ -30,6 +30,13 @@ fn load_workspace_for_current(app: &AppHandle) -> AppResult<Workspace> {
 
 #[tauri::command]
 pub fn bootstrap(app: AppHandle) -> AppResult<Workspace> {
+    let data = app_data(&app)?;
+    let catalog = catalog::load_catalog(&data)?;
+    if catalog.users.is_empty() {
+        let (catalog, user) = user_service::create_user(&data, "Default")?;
+        let users = user_service::summaries(&catalog);
+        return document_service::workspace_from_user(users, &user, None, None, None);
+    }
     load_workspace_for_current(&app)
 }
 
@@ -55,6 +62,17 @@ pub fn import_user_remote(app: AppHandle, name: String, url: String) -> AppResul
     let (catalog, user) = user_service::import_remote(&data, &name, &url)?;
     let users = user_service::summaries(&catalog);
     document_service::workspace_from_user(users, &user, None, None, None)
+}
+
+#[tauri::command]
+pub fn rename_user(app: AppHandle, id: String, name: String) -> AppResult<Workspace> {
+    let data = app_data(&app)?;
+    let (catalog, user) = user_service::rename_user(&data, &id, &name)?;
+    let users = user_service::summaries(&catalog);
+    if catalog.current_user_id.as_deref() == Some(user.id.as_str()) {
+        return document_service::workspace_from_user(users, &user, None, None, None);
+    }
+    load_workspace_for_current(&app)
 }
 
 #[tauri::command]
@@ -136,7 +154,7 @@ pub fn create_variant_from_version(
     let user = catalog::find_user(&catalog, &id)?.clone();
     let branch = git_service::sanitize_branch(&name)?;
     let repo = git_service::open_repository(PathBuf::from(&user.path).as_path())?;
-    let version = git_service::create_branch_from_commit(&repo, &branch, &version_id)?;
+    let version = git_service::create_branch_from_commit(&repo, &branch, &version_id, &user.name)?;
     user_service::remember_place(&data, &id, Some(&branch), Some(&version), Some("resume"))?;
     let catalog = catalog::load_catalog(&data)?;
     let user = catalog::find_user(&catalog, &id)?.clone();

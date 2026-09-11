@@ -31,6 +31,10 @@ export function VersionList({
   onCreateVariant,
   onDeleteUnsaved,
 }: Props) {
+  const finishedIds = new Set(
+    rows.filter((row) => !row.version.is_unsaved).map((row) => row.version.id),
+  );
+
   return (
     <div className="space-y-0.5 pl-4">
       {rows.map((row) => {
@@ -38,6 +42,10 @@ export function VersionList({
         const Icon = row.version.is_unsaved ? Icons.draft : Icons.version;
         const created = row.version.timestamp ? formatTime(row.version.timestamp) : "";
         const label = row.version.is_unsaved ? "Draft" : row.version.message || "Version";
+        const canDeleteDraft =
+          row.version.is_unsaved &&
+          Boolean(row.version.parent_id && finishedIds.has(row.version.parent_id));
+        const showMenu = row.version.is_unsaved ? canDeleteDraft : true;
         const rowButton = (
           <button
             type="button"
@@ -68,31 +76,33 @@ export function VersionList({
             ) : (
               rowButton
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0 opacity-70 group-hover:opacity-100"
-                  aria-label="Version actions"
-                >
-                  <Icons.versionMenu />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                {row.version.is_unsaved ? (
-                  <DropdownMenuItem onClick={() => onDeleteUnsaved(row.version.id)}>
-                    <Icons.deleteUnsaved />
-                    Delete Draft
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => onCreateVariant(row.version.id)}>
-                    <Icons.createVariant />
-                    Create variant
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {showMenu ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 opacity-70 group-hover:opacity-100"
+                    aria-label="Version Actions"
+                  >
+                    <Icons.versionMenu />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {row.version.is_unsaved ? (
+                    <DropdownMenuItem onClick={() => onDeleteUnsaved(row.version.id)}>
+                      <Icons.deleteUnsaved />
+                      Delete Draft
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => onCreateVariant(row.version.id)}>
+                      <Icons.createVariant />
+                      Create Variant
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </div>
         );
       })}

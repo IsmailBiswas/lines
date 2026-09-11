@@ -4,6 +4,7 @@ import type { DocumentFile, MappedImport, Workspace } from "./types";
 export const api = {
   bootstrap: () => invoke<Workspace>("bootstrap"),
   createUser: (name: string) => invoke<Workspace>("create_user", { name }),
+  renameUser: (id: string, name: string) => invoke<Workspace>("rename_user", { id, name }),
   importUserLocal: (name: string, path: string) =>
     invoke<Workspace>("import_user_local", { name, path }),
   importUserRemote: (name: string, url: string) =>

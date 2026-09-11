@@ -34,10 +34,10 @@ The point is local control. Each user's data is a Git repository they can keep o
 
 ## What v1 includes
 
-- Create a user, or import a whole Git repository as a user.
+- Create a user, or import a whole Git repository as a user. On first launch, the app creates user Default automatically. A user can be renamed from Switch User; that changes the catalog name only.
 - Switch user to move between completely separate workspaces. Only one user is open at a time.
-- On an empty user, create the first variant or import HTML into it. After that, HTML import is gone.
-- Create a later variant from a finished version: three dots on that version, then a name. That is a Git branch starting at that commit. Draft offers Delete Draft instead.
+- On an empty user, Create New or Import Existing both make the first variant named Base. After that, HTML import is gone.
+- Create a later variant from a finished version: three dots on that version, then a name. That is a Git branch from that commit with Draft as the only version at first. That opening Draft cannot be deleted. Later Drafts under a finished version offer Delete Draft.
 - Browse variants in a sidebar, search them by name, and open one.
 - See the versions of the open variant and open any version.
 - Edit and preview HTML for the resume, an optional cover letter, and as many additional documents as they create.
@@ -112,7 +112,7 @@ These replace the earlier assumption list.
 
 - A **user** is a Git repository and a complete workspace. The UI presents opening another repository as switching user. User names are free text.
 - A **variant** is a Git branch on the open user. The name typed for it is the branch name. It is free text, not a role or company pattern the app suggests.
-- The first variant exists only while the user is empty: create a resume or import HTML. Every later variant is a branch created from a chosen finished version. Draft is not a starting point for a variant.
+- The first variant exists only while the user is empty: Create New makes Base, or Import Existing brings in HTML. Every later variant is a branch from a chosen finished version that opens on Draft only. Draft is not a starting point for creating a variant.
 - A **version** is a Git commit. Resume, cover letter, and every additional document that exists sit in that same commit.
 - **Draft** is also a Git commit. Its message is `unsaved`. Selecting it and editing amends that commit. It does not create a new commit.
 - Starting to edit a finished version creates an Draft version under it (a new commit with message `unsaved`). After that, further edits amend Draft.
@@ -131,7 +131,7 @@ These replace the earlier assumption list.
 
 The product is in good shape when a person can:
 
-- Create the first user and a first variant in one sitting without seeing Git language they do not need.
+- Create the first sitting with Default open and a first variant without naming dialogs they do not need.
 - Switch user and land in a completely separate workspace, then switch back to the last place on the previous user.
 - Move between variants and versions and always know what they are looking at.
 - Add a cover letter or more documents only when they want them.

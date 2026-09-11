@@ -44,7 +44,7 @@ Default wide layout, left to right:
 
 1. Sidebar, with the current user and switch-user control at the top
 2. Document tabs plus the split view
-3. Settings, Sync, Export, and other rare actions in the header, top right
+3. Create new version, Export, then Settings at the far right of the header
 
 Default split view:
 
@@ -63,28 +63,31 @@ When the window is narrow:
 
 - The open user is always visible. The control reads as the current user, not as a repository.
 - Switching user is a compact list of known users, plus create user and import user.
+- Each known user has a three-dot control. Rename User asks for a new name and updates the catalog only.
 - The selected user must be obvious. This is still a shape and weight change, not a color shout.
 - Do not design this like a cloud account menu. There is no avatar store, no sign-out, and no password.
-- Settings is a cog menu. Theme lives there. The open user's remote is a short dialog from that menu, not a preference page.
+- Settings is a cog menu on the far right. Theme, Sync, and the open user's remote live there. Sync is not a standalone header icon.
 
 ## Sidebar
 
 - Variants are the primary list of the open user.
 - Versions appear for the open variant, slightly indented under that variant.
-- Draft is a child of the finished version it came from, not a floating extra row.
+- Draft under a finished version is a child of that version, not a floating extra row. The opening Draft on a new later variant stands alone until a finished version exists.
 - Draft must be easy to spot: lighter structure, a clear label, and no chance of looking like a finished version.
 - Version rows show the name only. The created time is a tooltip on hover.
-- Search sits at the top of the variant list and only promises to filter names.
+- Search sits at the top of the variant list and only promises to filter names. Leave clear space under the user header rule, and keep the gap to the first variant tight.
 - After the user has work, do not show a + or import control in the sidebar. New variants come from the three-dot control on a version.
 - Selected variant and selected version must both be obvious. The open variant and its versions share one quiet background so the group reads as one block. Selection is a shape and weight change, not a new hue.
 - Opening or closing a variant's versions should animate. Do not snap the list in or out.
+- Collapsed variant rows sit close together. Do not leave large empty gaps between unselected variants.
 
 ## Tabs
 
 - Tabs look like tabs, but they are compact. They are not large pill buttons.
 - The active tab is obvious at a glance.
 - Tab labels are the document names. Resume is always there. Cover letter and each additional document appear only after they exist.
-- There is a compact way to add a cover letter or another additional document. That control is not a fake empty tab.
+- There is a compact way to add a cover letter (labeled) or another additional document (a + icon with tooltip Add Document). That control is not a fake empty tab.
+- Search sits under the user switcher with clear space below the header rule, then sits close above the first variant.
 
 ## Editor and preview
 
@@ -97,7 +100,7 @@ When the window is narrow:
 ## Export modal
 
 - Title only. Do not put explanatory copy under Export or Remote.
-- Accordion rows for resume file name, save location, and files. Each row is a text control with no outline. The chevron sits on the left of the label. Collapsed rows show the current value after a colon.
+- Accordion rows for resume file name, save location, and files. Each row is a text control with no outline. The chevron sits on the left of the label. Collapsed rows show the current value after a colon. Labels use Title Case.
 - Files default to every document on the open variant, each with a checkbox.
 - Enter in a dialog text field submits that dialog's primary action.
 - While PDFs are being written, keep the modal open and show a loader.
@@ -111,8 +114,10 @@ When the window is narrow:
 
 ## Empty and first-run
 
-- First run is a calm empty state: name the first user, then Create new or Import existing for a variant.
-- An existing user with no variants uses the same two variant actions. It does not ask for a user name again.
+- First run creates user Default automatically, then shows Create New or Import Existing for a variant. There is no first-run user-name dialog.
+- Create New and Import Existing on an empty user both use variant Base. Neither asks for a variant name. Import Existing opens the file picker next.
+- Text fields in the app chrome do not offer browser suggestions or autofill.
+- An existing empty user uses the same two variant actions.
 - After a multi-file import, a short mapping modal asks which file is the resume, which is the cover letter, and which are additional documents. Skip this modal when only one file was chosen.
 - No feature tour.
 - No fake sample resume unless the user asks for one later. v1 does not require a sample.
@@ -135,6 +140,7 @@ When the window is narrow:
 
 - Use a small type scale. The resume preview can be richer because that is user content. The app chrome stays modest.
 - User names, variant names, version labels, and tab labels should be readable at sidebar density.
+- Action labels, menu items, dialog titles, tooltips, and field labels use Title Case (for example Create New User, Add Cover Letter). Body copy and helper sentences stay sentence case.
 - Do not use display-sized headings in the app frame.
 
 ## What to refuse

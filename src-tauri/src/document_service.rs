@@ -24,7 +24,7 @@ pub fn documents_from_import(files: &[MappedImport]) -> AppResult<Vec<DocumentFi
             }
             "cover-letter" => documents.push(DocumentFile {
                 key: "cover-letter".into(),
-                name: "Cover letter".into(),
+                name: "Cover Letter".into(),
                 kind: "cover-letter".into(),
                 content,
             }),
@@ -69,7 +69,7 @@ pub fn resume_document(content: Option<String>) -> DocumentFile {
 pub fn cover_letter_document() -> DocumentFile {
     DocumentFile {
         key: "cover-letter".into(),
-        name: "Cover letter".into(),
+        name: "Cover Letter".into(),
         kind: "cover-letter".into(),
         content: default_cover_letter_html(),
     }

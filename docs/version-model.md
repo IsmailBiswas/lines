@@ -34,7 +34,9 @@ What belongs to a user stays with that user:
 
 None of that is visible while another user is open. Switching user is how separate work stays separate.
 
-Creating a user creates a new empty Git repository (`git init`) and asks for a free-text user name. That folder is a real repository from the first moment, even before it has a variant.
+Creating a user creates a new empty Git repository (`git init`) and stores a free-text user name. That folder is a real repository from the first moment, even before it has a variant. On first launch, when the catalog has no users, the app creates user Default automatically.
+
+The display name lives in the catalog. The folder on disk is keyed by a stable user id, not by the name. Renaming a user updates the catalog only. Git has no repository-name field that this app needs to change.
 
 Exporting a user copies that whole repository, including the `.git` folder, to a folder the person chooses. The export is a normal Git repository. Anyone can open it with Git. This app can import that same folder as a new user.
 
@@ -50,16 +52,16 @@ A variant is a Git branch. The name the person types is the branch name. It is f
 
 The sidebar lists variants of the open user. They can search that list by name. Selecting a variant opens it: the app switches to that branch and shows **this variant's** versions.
 
-A later variant starts at the version it was created from. Git still keeps the older parent commits (that is real history). The UI does not show those parents. It shows the starting version and anything written after it on this variant.
+A later variant is created from a finished version. Git keeps that source commit as real parent history. The UI does not show the source version on the new variant. The new variant opens on a Draft that holds the same files, and that Draft is the only version listed until the person creates a finished version.
 
-The starting version is stored in the repository as a Git ref for that branch. It is not a second database. The original variant keeps its own start, so its older versions stay visible even after another variant is created from its latest version.
+The source commit is stored as a Git ref for that branch so listing stops before it. It is not a second database. The original variant keeps its own history, so its versions stay visible after another variant is created from one of them.
 
 Variant names should stay readable in a compact sidebar. Do not encode dates or file types into the name unless the user types them.
 
 There are two ways a variant appears:
 
-1. **First variant, empty user only.** Create a new HTML resume, or import HTML files. That creates the first branch and its first commit. After the user has any variant, HTML import is gone.
-2. **Later variants.** A new variant is a Git branch created from an existing version (commit). The three-dot control on a version asks for a name, then creates a branch that starts at that commit. It does not start from thin air and it does not start from whatever branch happens to be open.
+1. **First variant, empty user only.** Create New starts a new HTML resume as variant Base, or Import Existing brings in HTML files as variant Base. That creates the first branch and its first commit. After the user has any variant, HTML import is gone.
+2. **Later variants.** A new variant is a Git branch created from an existing finished version. The three-dot control on a version asks for a name, then creates a branch from that commit and a Draft on top. The new variant lists only that Draft at first. It does not start from thin air and it does not start from whatever branch happens to be open.
 
 Do not offer a + control that creates an empty variant after work already exists.
 
@@ -94,7 +96,7 @@ How it is written:
 
 Create new version is different. That action asks for a version name, then turns the current work into a finished version: a commit with that message. Draft goes away. The name cannot be empty and cannot be `unsaved`.
 
-The three-dot control on Draft is Delete Draft, not Create variant. A later variant starts only from a finished version. Deleting Draft drops that commit and opens the finished version it came from. That is the only way Draft work is thrown away.
+The three-dot control on Draft is Delete Draft, not Create variant, except when Draft is the first and only version on a later variant. That opening Draft cannot be deleted. A later variant starts only from a finished version. When Delete Draft is allowed, it drops that commit and opens the finished version it came from. That is the only way Draft work is thrown away.
 
 Switching and quitting still keep unnamed work as Draft so nothing is lost.
 

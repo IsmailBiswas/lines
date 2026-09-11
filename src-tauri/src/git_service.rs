@@ -87,6 +87,7 @@ pub fn create_branch_from_commit(
     repo: &Repository,
     branch: &str,
     version_id: &str,
+    author: &str,
 ) -> AppResult<String> {
     if repo.find_branch(branch, BranchType::Local).is_ok() {
         return Err(AppError::msg("A variant with that name already exists."));
@@ -98,9 +99,15 @@ pub fn create_branch_from_commit(
         return Err(AppError::msg("Create a variant from a finished version."));
     }
     repo.branch(branch, &commit, false)?;
+    // Exclusive boundary: the source version is not listed on the new variant.
     set_variant_root(repo, branch, commit.id())?;
     checkout_branch(repo, branch)?;
-    Ok(commit.id().to_string())
+    let sig = signature(author)?;
+    let tree = commit.tree()?;
+    let draft = repo.commit(None, &sig, &sig, UNSAVED_MESSAGE, &tree, &[&commit])?;
+    set_unsaved_ref(repo, branch, draft)?;
+    move_branch_to(repo, branch, draft, None)?;
+    Ok(draft.to_string())
 }
 
 pub fn list_branches(repo: &Repository) -> AppResult<Vec<String>> {
@@ -159,7 +166,6 @@ pub fn create_orphan_branch(
         &tree,
         &[],
     )?;
-    set_variant_root(repo, branch, oid)?;
     checkout_branch(repo, branch)?;
     Ok(oid.to_string())
 }
@@ -209,13 +215,14 @@ fn collect_line(
     let mut commit = repo.find_commit(start)?;
     loop {
         let oid = commit.id();
+        if root == Some(oid) {
+            // Exclusive boundary: the root commit is not listed on this variant.
+            break;
+        }
         if !seen.insert(oid) {
             break;
         }
         versions.push(version_from_commit(&commit));
-        if root == Some(oid) {
-            break;
-        }
         match commit.parent(0) {
             Ok(parent) => commit = parent,
             Err(_) => break,
@@ -317,7 +324,7 @@ pub fn read_documents(repo: &Repository, version_id: &str) -> AppResult<Vec<Docu
     if let Ok(blob) = blob_at(&repo, &tree, COVER_LETTER_PATH) {
         documents.push(DocumentFile {
             key: "cover-letter".into(),
-            name: "Cover letter".into(),
+            name: "Cover Letter".into(),
             kind: "cover-letter".into(),
             content: blob,
         });
@@ -434,6 +441,10 @@ pub fn delete_unsaved(repo: &Repository, branch: &str, version_id: &str) -> AppR
     let parent = commit
         .parent(0)
         .map_err(|_| AppError::msg("That Unsaved version has nothing to return to."))?;
+    let root = variant_root(repo, branch)?;
+    if root == Some(parent.id()) {
+        return Err(AppError::msg("This Draft cannot be deleted."));
+    }
     let tip = branch_tip(repo, branch)?;
     if tip == oid {
         repo.reference(
@@ -899,5 +910,19 @@ mod tests {
         assert!(listed.iter().all(|version| !version.is_unsaved));
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].id, one);
+    }
+
+    #[test]
+    fn later_variant_opens_on_draft_only() {
+        let temp = temp_repo();
+        let repo = &temp.repo;
+        let one = create_orphan_branch(&repo, "main", &resume("one"), "one", "tester").unwrap();
+        let draft = create_branch_from_commit(&repo, "other", &one, "tester").unwrap();
+        let listed = list_versions(&repo, "other").unwrap();
+        assert_eq!(listed.len(), 1);
+        assert!(listed[0].is_unsaved);
+        assert_eq!(listed[0].id, draft);
+        assert_eq!(listed[0].parent_id.as_deref(), Some(one.as_str()));
+        assert!(delete_unsaved(&repo, "other", &draft).is_err());
     }
 }

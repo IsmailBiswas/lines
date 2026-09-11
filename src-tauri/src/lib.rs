@@ -28,6 +28,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::bootstrap,
             commands::create_user,
+            commands::rename_user,
             commands::import_user_local,
             commands::import_user_remote,
             commands::switch_user,

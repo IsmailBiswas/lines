@@ -118,7 +118,8 @@ It must be able to:
 - Create the first branch only when the repository has none
 - Create a later branch from an existing commit
 - Switch the open branch
-- List commits on a branch, newest first, stopping at that variant's starting commit (stored as a Git ref when the variant is created). Also list versions created later from an older version on the same variant (kept as Git refs so they stay visible)
+- List commits on a branch, newest first, stopping before that variant's boundary commit (stored as a Git ref when a later variant is created from a finished version). The boundary itself is not listed. Also list versions created later from an older version on the same variant (kept as Git refs so they stay visible)
+- Create a later variant from a finished version: new branch, Draft commit with the same tree, open on that Draft. That opening Draft cannot be deleted.
 - Read the file tree of a commit
 - Create a commit with message `unsaved` from any finished version on the variant
 - Amend the current `unsaved` commit
@@ -157,7 +158,8 @@ Do not write this logic in four frontend handlers. The window-close hook in Taur
 
 Thin layer over catalog plus Git:
 
-- Create user: name → empty repo → catalog row → open it
+- Create user: name → empty repo under a stable id → catalog row → open it
+- Rename user: update the catalog display name only
 - Import local or remote: path or URL → repo on disk → catalog row → open it
 - Export user: current repo → chosen folder
 - Switch user: write service first, then catalog switch, then load that repo
@@ -215,10 +217,11 @@ If a new command would let the UI create commits itself, stop. That belongs in t
 - Variant search and list
 - Versions under the open variant, slightly indented, each with a three-dot control to create a variant from a finished version or delete Draft
 - Document tabs
-- Header actions on the right: Settings, Sync, create new version, export
+- Header actions on the right: create new version, export, then Settings last
+- Settings menu holds theme, Sync, and remote
 - Split view: editor left, preview right, both resizable. Preview has zoom and opens fitted to the pane.
 
-Narrow windows may collapse the sidebar. Switch user, tabs, editor, preview, Settings, Sync, and export must still be reachable.
+Narrow windows may collapse the sidebar. Switch user, tabs, editor, preview, Settings (including Sync), and export must still be reachable.
 
 ### App state
 
@@ -268,41 +271,42 @@ Use the same icon for the same action everywhere.
 | Place | Lucide icon | Label or tooltip |
 | --- | --- | --- |
 | Current user | `User` | The user name |
-| Switch user | `Users` or `ChevronsUpDown` | Switch user |
-| Create user | `UserPlus` | Create user |
-| Import user | `FolderInput` | Import user |
-| Export user | `FolderOutput` | Export user |
+| Switch user | `Users` or `ChevronsUpDown` | Switch User |
+| Create user | `UserPlus` | Create New User |
+| Rename user | `PenLine` | Rename User |
+| Import user | `FolderInput` | Import Existing User |
+| Export user | `FolderOutput` | Export User Data |
 | Search variants | `Search` | Search |
-| Create first variant | `Plus` | Create new, empty user only |
-| Version menu | `MoreHorizontal` | Version actions |
-| Create variant from version | `Plus` | Create variant |
+| Create first variant | `Plus` | Create New, empty user only |
+| Version menu | `MoreHorizontal` | Version Actions |
+| Create variant from version | `Plus` | Create Variant |
 | Delete Draft | `Trash2` | Delete Draft |
 | Import HTML | `FileInput` | Import, empty user only |
 | Variant row | `Box` | Variant name |
 | Finished version | `Files` | Version message. Created time is a tooltip. |
 | Draft version | `Pencil` | Draft |
-| Create new version | `Save` | Create new version |
-| Preview zoom in | `ZoomIn` | Zoom in |
-| Preview zoom out | `ZoomOut` | Zoom out |
+| Create new version | `Save` | Create New Version |
+| Preview zoom in | `ZoomIn` | Zoom In |
+| Preview zoom out | `ZoomOut` | Zoom Out |
 | Preview fit | `Maximize` | Fit |
 | Settings | `Settings` | Settings |
-| Use light theme | `Sun` | Light |
-| Use dark theme | `Moon` | Dark |
+| Use light theme | `Sun` | Use Light Theme |
+| Use dark theme | `Moon` | Use Dark Theme |
 | Create repository | `ChevronUp` | Create Repository |
 | Open host page | `ExternalLink` | Open |
 | Sync | `RefreshCw` | Sync |
 | Resume tab | `FileText` | Resume |
-| Cover letter tab | `Mail` | Cover letter |
+| Cover letter tab | `Mail` | Cover Letter |
 | Additional document tab | `File` | Document name |
-| Add cover letter | `MailPlus` | Add cover letter |
-| Add additional document | `FilePlus` | Add document |
+| Add cover letter | `MailPlus` | Add Cover Letter |
+| Add additional document | `Plus` | Icon-only with tooltip Add Document |
 | Export PDF | `FileDown` | Export |
-| Accordion expand | `ChevronUp` | Resume file name, Save location, Files, Create Repository |
+| Accordion expand | `ChevronUp` | Resume File Name, Save Location, Files, Create Repository |
 | Close dialog | `X` | Close |
 | Confirm | keep the button label, no extra icon required | Export, Create, Import |
-| Empty create | `Plus` | Create new |
-| Empty import | `FileInput` | Import existing |
-| Sidebar collapsed | `PanelLeft` | Open sidebar |
+| Empty create | `Plus` | Create New |
+| Empty import | `FileInput` | Import Existing |
+| Sidebar collapsed | `PanelLeft` | Open Sidebar |
 | Failed action | `AlertCircle` | The error text still does the talking |
 | Busy | `LoaderCircle` | The action name |
 
@@ -317,8 +321,8 @@ If a control has no honest Lucide match, use a label only. Do not stretch an unr
 ### First launch
 
 1. Catalog is empty.
-2. Ask for a user name. Create an empty repository and a catalog row.
-3. Ask to create or import a variant. Create a branch with that name and a first commit that holds `resume.html`, plus any mapped imported files.
+2. Bootstrap creates user Default (empty repository and catalog row) and opens it.
+3. Empty variant screen: Create New creates variant Base with `resume.html`, or Import Existing picks HTML files as variant Base.
 4. Open that user, variant, version, and the resume tab.
 
 ### Return launch
@@ -361,7 +365,7 @@ Only while the user has no variants.
 Do not start with PDF or remote import. Build in this order so each step can be checked.
 
 1. Tauri window, shadcn theme, Lucide, empty layout.
-2. Catalog plus create user and switch user, even with empty repositories.
+2. Catalog plus bootstrap that creates Default when empty, then switch user and create user from the menu.
 3. Create variant, list variants, open one, show `resume.html` in the split view.
 4. Version list and opening an older commit.
 5. Write service: dirty detection, create Unsaved, amend Unsaved, block failed switch.

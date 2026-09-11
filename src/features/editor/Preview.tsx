@@ -89,7 +89,7 @@ export function Preview({ html, fitKey }: Props) {
               <Icons.zoomOut />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Zoom out</TooltipContent>
+          <TooltipContent>Zoom Out</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -105,7 +105,7 @@ export function Preview({ html, fitKey }: Props) {
               <Icons.zoomIn />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Zoom in</TooltipContent>
+          <TooltipContent>Zoom In</TooltipContent>
         </Tooltip>
       </div>
     </div>

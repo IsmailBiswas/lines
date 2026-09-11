@@ -13,10 +13,13 @@ import { useTheme } from "@/theme";
 
 type Props = {
   hasUser: boolean;
+  canSync: boolean;
+  busy: boolean;
   onRemote: () => void;
+  onSync: () => void;
 };
 
-export function SettingsMenu({ hasUser, onRemote }: Props) {
+export function SettingsMenu({ hasUser, canSync, busy, onRemote, onSync }: Props) {
   const { theme, toggleTheme } = useTheme();
   const next = theme === "dark" ? "Light" : "Dark";
   const ThemeIcon = theme === "dark" ? Icons.themeLight : Icons.themeDark;
@@ -37,12 +40,16 @@ export function SettingsMenu({ hasUser, onRemote }: Props) {
         <DropdownMenuLabel>Settings</DropdownMenuLabel>
         <DropdownMenuItem onClick={toggleTheme}>
           <ThemeIcon />
-          Use {next.toLowerCase()} theme
+          Use {next} Theme
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onRemote} disabled={!hasUser}>
           <Icons.openLink />
           Remote
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onSync} disabled={!canSync || busy}>
+          {busy ? <Icons.busy className="animate-spin" /> : <Icons.sync />}
+          Sync
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

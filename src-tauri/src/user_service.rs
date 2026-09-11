@@ -114,6 +114,19 @@ pub fn import_remote(app_data: &Path, name: &str, url: &str) -> AppResult<(Catal
     Ok((catalog, user))
 }
 
+pub fn rename_user(app_data: &Path, id: &str, name: &str) -> AppResult<(Catalog, UserRecord)> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(AppError::msg("Name cannot be empty."));
+    }
+    let mut catalog = catalog::load_catalog(app_data)?;
+    let user = catalog::find_user_mut(&mut catalog, id)?;
+    user.name = name.to_string();
+    let user = user.clone();
+    catalog::save_catalog(app_data, &catalog)?;
+    Ok((catalog, user))
+}
+
 pub fn switch_user(app_data: &Path, id: &str) -> AppResult<(Catalog, UserRecord)> {
     let mut catalog = catalog::load_catalog(app_data)?;
     let user = catalog::find_user(&catalog, id)?.clone();

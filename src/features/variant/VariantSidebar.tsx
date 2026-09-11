@@ -39,14 +39,17 @@ export function VariantSidebar({
   }, [currentVariant, versionRows]);
 
   return (
-    <div className="space-y-4 px-4 py-4">
+    <div className="space-y-1 px-4 pb-4 pt-1">
       {variants.map((variant) => {
         const selected = variant.name === currentVariant;
         const rows = selected ? versionRows : cache[variant.name];
         return (
           <div
             key={variant.name}
-            className={cn("rounded-md px-2 py-2", selected ? "bg-accent" : "hover:bg-accent/40")}
+            className={cn(
+              "rounded-md px-2",
+              selected ? "bg-accent py-2" : "py-0.5 hover:bg-accent/40",
+            )}
           >
             <button
               type="button"

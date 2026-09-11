@@ -72,6 +72,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userName, setUserName] = useState("");
+  const [renameUserId, setRenameUserId] = useState<string | null>(null);
   const [variantName, setVariantName] = useState("");
   const [remoteUrl, setRemoteUrl] = useState("");
   const [remoteToken, setRemoteToken] = useState("");
@@ -81,10 +82,9 @@ export default function App() {
   const [dialog, setDialog] = useState<
     | null
     | "create-user"
+    | "rename-user"
     | "import-user"
-    | "create-variant"
     | "create-variant-from"
-    | "import-variant"
     | "add-doc"
     | "export-pdf"
     | "map-files"
@@ -233,11 +233,23 @@ export default function App() {
     });
   }
 
-  async function handleCreateVariant() {
-    await run(() => api.createVariant(variantName), () => {
+  function openRenameUser(user: { id: string; name: string }) {
+    setRenameUserId(user.id);
+    setUserName(user.name);
+    setDialog("rename-user");
+  }
+
+  async function handleRenameUser() {
+    if (!renameUserId) return;
+    await run(() => api.renameUser(renameUserId, userName), () => {
       setDialog(null);
-      setVariantName("");
+      setRenameUserId(null);
+      setUserName("");
     });
+  }
+
+  async function handleCreateBaseVariant() {
+    await run(() => api.createVariant("Base"));
   }
 
   async function handleDeleteUnsaved() {
@@ -281,13 +293,8 @@ export default function App() {
     if (!selected) return;
     const files = Array.isArray(selected) ? selected : [selected];
     if (files.length === 1) {
-      await run(
-        () =>
-          api.importVariant(variantName, [{ path: files[0], kind: "resume", extra_name: null }]),
-        () => {
-          setDialog(null);
-          setVariantName("");
-        },
+      await run(() =>
+        api.importVariant("Base", [{ path: files[0], kind: "resume", extra_name: null }]),
       );
       return;
     }
@@ -306,9 +313,8 @@ export default function App() {
       kind: fileKinds[path] ?? "additional",
       extra_name: null,
     }));
-    await run(() => api.importVariant(variantName, files), () => {
+    await run(() => api.importVariant("Base", files), () => {
       setDialog(null);
-      setVariantName("");
       setPendingFiles([]);
     });
   }
@@ -473,13 +479,14 @@ export default function App() {
                     users={workspace.users}
                     current={workspace.current_user}
                     onSwitch={(id) => void handleSwitchUser(id)}
+                    onRename={openRenameUser}
                     onCreate={() => setDialog("create-user")}
                     onImport={() => setDialog("import-user")}
                     onExport={() => void handleExportUser()}
                   />
                 </div>
                 {workspace.current_user && workspace.variants.length > 0 ? (
-                  <div className="flex h-10 shrink-0 items-center gap-2 px-4">
+                  <div className="flex shrink-0 items-center gap-2 px-4 pb-1 pt-3">
                     <div className="relative flex-1">
                       <Icons.search className="pointer-events-none absolute left-2 top-2.5 size-3.5 text-muted-foreground" />
                       <Input
@@ -527,7 +534,7 @@ export default function App() {
               onClick={() => setSidebarOpen((open) => !open)}
             >
               <Icons.sidebar />
-              <span className="sr-only">Open sidebar</span>
+              <span className="sr-only">Open Sidebar</span>
             </Button>
             <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
               {documents.map((document) => {
@@ -560,42 +567,33 @@ export default function App() {
                   {!hasCoverLetter ? (
                     <Button variant="ghost" size="sm" onClick={() => void handleAddDocument("cover-letter")}>
                       <Icons.addCoverLetter />
-                      Add cover letter
+                      Add Cover Letter
                     </Button>
                   ) : null}
-                  <Button variant="ghost" size="sm" onClick={() => void handleAddDocument("additional")}>
-                    <Icons.addDocument />
-                    Add document
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => void handleAddDocument("additional")}
+                        aria-label="Add Document"
+                      >
+                        <Icons.createVariant />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Add Document</TooltipContent>
+                  </Tooltip>
                 </>
               ) : null}
             </div>
-            <SettingsMenu hasUser={Boolean(workspace.current_user)} onRemote={openRemote} />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => void handleSync()}
-                  disabled={
-                    !workspace.current_user ||
-                    !workspace.remote_url ||
-                    !workspace.has_remote_token ||
-                    busy
-                  }
-                >
-                  {busy ? <Icons.busy className="animate-spin" /> : <Icons.sync />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Sync</TooltipContent>
-            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={() => void handleSave()} disabled={!canSave || busy}>
                   {busy ? <Icons.busy className="animate-spin" /> : <Icons.save />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Create new version</TooltipContent>
+              <TooltipContent>Create New Version</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -610,6 +608,15 @@ export default function App() {
               </TooltipTrigger>
               <TooltipContent>Export</TooltipContent>
             </Tooltip>
+            <SettingsMenu
+              hasUser={Boolean(workspace.current_user)}
+              canSync={Boolean(
+                workspace.current_user && workspace.remote_url && workspace.has_remote_token,
+              )}
+              busy={busy}
+              onRemote={openRemote}
+              onSync={() => void handleSync()}
+            />
           </header>
 
           {error ? (
@@ -621,21 +628,21 @@ export default function App() {
 
           {noUsers ? (
             <EmptyState
-              title="Create the first user"
+              title="Create the First User"
               copy="A user is a complete, separate workspace."
-              primary="Create user"
+              primary="Create New User"
               onPrimary={() => setDialog("create-user")}
-              secondary="Import user"
+              secondary="Import Existing User"
               onSecondary={() => setDialog("import-user")}
             />
           ) : noVariants ? (
             <EmptyState
-              title={`Start ${workspace.current_user?.name ?? "this user"}`}
+              title={`Start ${workspace.current_user?.name ?? "This User"}`}
               copy="Create a new resume or import HTML files."
-              primary="Create new"
-              onPrimary={() => setDialog("create-variant")}
-              secondary="Import existing"
-              onSecondary={() => setDialog("import-variant")}
+              primary="Create New"
+              onPrimary={() => void handleCreateBaseVariant()}
+              secondary="Import Existing"
+              onSecondary={() => void pickHtmlFiles()}
             />
           ) : (
             <SplitEditor document={currentDocument} onChange={updateContent} />
@@ -654,15 +661,52 @@ export default function App() {
             }}
           >
             <DialogHeader>
-              <DialogTitle>Create user</DialogTitle>
+              <DialogTitle>Create New User</DialogTitle>
               <DialogDescription>This starts a new workspace.</DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <Label htmlFor="user-name">User name</Label>
+              <Label htmlFor="user-name">User Name</Label>
               <Input id="user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
             </div>
             <Button type="submit" disabled={!userName.trim() || busy}>
               Create
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={dialog === "rename-user"}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialog(null);
+            setRenameUserId(null);
+            setUserName("");
+          }
+        }}
+      >
+        <DialogContent>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (userName.trim() && !busy) void handleRenameUser();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Rename User</DialogTitle>
+              <DialogDescription>This changes the name shown in Switch User.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="rename-user-name">User Name</Label>
+              <Input
+                id="rename-user-name"
+                value={userName}
+                onChange={(event) => setUserName(event.target.value)}
+              />
+            </div>
+            <Button type="submit" disabled={!userName.trim() || busy}>
+              Save
             </Button>
           </form>
         </DialogContent>
@@ -680,15 +724,15 @@ export default function App() {
             }}
           >
             <DialogHeader>
-              <DialogTitle>Import user</DialogTitle>
+              <DialogTitle>Import Existing User</DialogTitle>
               <DialogDescription>Open a whole repository as a user.</DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <Label htmlFor="import-user-name">User name</Label>
+              <Label htmlFor="import-user-name">User Name</Label>
               <Input id="import-user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="remote-url">Remote, if you have one</Label>
+              <Label htmlFor="remote-url">Remote, If You Have One</Label>
               <Input
                 id="remote-url"
                 value={remoteUrl}
@@ -699,36 +743,12 @@ export default function App() {
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => void handleImportUserLocal()} disabled={busy}>
                 <Icons.importUser />
-                Local folder
+                Local Folder
               </Button>
               <Button type="submit" disabled={busy}>
-                {remoteUrl.trim() ? "Import remote" : "Import"}
+                {remoteUrl.trim() ? "Import Remote" : "Import"}
               </Button>
             </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={dialog === "create-variant"} onOpenChange={(open) => !open && setDialog(null)}>
-        <DialogContent>
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (variantName.trim() && !busy) void handleCreateVariant();
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>Create</DialogTitle>
-              <DialogDescription>Name this first resume line.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="variant-name">Name</Label>
-              <Input id="variant-name" value={variantName} onChange={(event) => setVariantName(event.target.value)} />
-            </div>
-            <Button type="submit" disabled={!variantName.trim() || busy}>
-              Create
-            </Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -761,7 +781,7 @@ export default function App() {
             }}
           >
             <DialogHeader>
-              <DialogTitle>Create variant</DialogTitle>
+              <DialogTitle>Create Variant</DialogTitle>
               <DialogDescription>This starts a new line from the chosen version.</DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
@@ -779,39 +799,10 @@ export default function App() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={dialog === "import-variant"} onOpenChange={(open) => !open && setDialog(null)}>
-        <DialogContent>
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (variantName.trim() && !busy) void pickHtmlFiles();
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>Import</DialogTitle>
-              <DialogDescription>Choose a name, then one or more HTML files.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="import-variant-name">Name</Label>
-              <Input
-                id="import-variant-name"
-                value={variantName}
-                onChange={(event) => setVariantName(event.target.value)}
-              />
-            </div>
-            <Button type="submit" disabled={!variantName.trim() || busy}>
-              <Icons.importHtml />
-              Choose files
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={dialog === "map-files"} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Map files</DialogTitle>
+            <DialogTitle>Map Files</DialogTitle>
             <DialogDescription>Say which file is the resume, cover letter, or additional.</DialogDescription>
           </DialogHeader>
           <div className="mt-4 max-h-64 space-y-4 overflow-auto">
@@ -826,8 +817,8 @@ export default function App() {
                   }
                 >
                   <option value="resume">Resume</option>
-                  <option value="cover-letter">Cover letter</option>
-                  <option value="additional">Additional document</option>
+                  <option value="cover-letter">Cover Letter</option>
+                  <option value="additional">Additional Document</option>
                 </select>
               </div>
             ))}
@@ -848,7 +839,7 @@ export default function App() {
             }}
           >
             <DialogHeader>
-              <DialogTitle>Name this version</DialogTitle>
+              <DialogTitle>Name This Version</DialogTitle>
               <DialogDescription>This becomes the saved version name.</DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
@@ -876,14 +867,14 @@ export default function App() {
             }}
           >
             <DialogHeader>
-              <DialogTitle>Add document</DialogTitle>
+              <DialogTitle>Add Document</DialogTitle>
             </DialogHeader>
             <div className="space-y-2">
               <Label htmlFor="doc-name">Name</Label>
               <Input id="doc-name" value={extraName} onChange={(event) => setExtraName(event.target.value)} />
             </div>
             <Button type="submit" disabled={!extraName.trim() || busy}>
-              Add document
+              Add Document
             </Button>
           </form>
         </DialogContent>
@@ -989,7 +980,7 @@ export default function App() {
               type="submit"
               disabled={!remoteUrl.trim() || (!remoteToken.trim() && !workspace.has_remote_token) || busy}
             >
-              Save remote
+              Save Remote
             </Button>
           </form>
         </DialogContent>

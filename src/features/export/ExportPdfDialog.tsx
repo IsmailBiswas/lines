@@ -60,7 +60,7 @@ export function ExportPdfDialog({
             <DialogTitle>Export</DialogTitle>
           </DialogHeader>
           <AccordionRow
-            label="Resume file name"
+            label="Resume File Name"
             summary={pdfName || "resume.pdf"}
             open={expanded === "name"}
             onToggle={() => onToggle("name")}
@@ -68,7 +68,7 @@ export function ExportPdfDialog({
             <Input value={pdfName} onChange={(event) => onNameChange(event.target.value)} disabled={busy} />
           </AccordionRow>
           <AccordionRow
-            label="Save location"
+            label="Save Location"
             summary={pdfFolder || "Downloads"}
             open={expanded === "location"}
             onToggle={() => onToggle("location")}

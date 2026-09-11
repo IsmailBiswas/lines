@@ -11,7 +11,7 @@ export function ThemeToggle() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Use ${next} theme`}>
+        <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Use ${next} Theme`}>
           <Icon />
         </Button>
       </TooltipTrigger>
