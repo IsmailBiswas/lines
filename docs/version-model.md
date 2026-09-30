@@ -40,7 +40,7 @@ The display name lives in the catalog. The folder on disk is keyed by a stable u
 
 Exporting a user copies that whole repository, including the `.git` folder, to a folder the person chooses. The export is a normal Git repository. Anyone can open it with Git. This app can import that same folder as a new user.
 
-Importing a local folder requires it to already be a Git repository. Importing a remote clones it. Import never merges into the user who is already open.
+Importing a local folder requires it to already be a Git repository. Importing a remote clones it with a token, fetches this app's variant refs, creates a local branch for every remote variant, stores that token on the new user, and opens the default variant. Import never merges into the user who is already open.
 
 Do not invent a second database that can drift from Git. Git is the record inside each user. The catalog only remembers names and paths.
 
@@ -128,7 +128,7 @@ Search in the sidebar filters variants by name. It does not need to search insid
 
 A user exported from this app is a Git repository this app can open again as a user.
 
-Opening a remote as import means importing that whole repository as a user. Sync on the open user pulls with a fast-forward only, then pushes, using the catalog token. v1 does not merge the current user with a remote and does not ask anyone to resolve conflicts. If the histories have diverged, sync fails and the local user stays as it is.
+Opening a remote as import means importing that whole repository as a user. Sync on the open user pulls, then pushes, using the catalog token. When the open tip and the remote tip diverge because a version was created from an older version on the same variant, Sync keeps the remote tip as an extra version ref (same as local), then updates the remote tip to match local. Both tips stay listed. v1 does not merge and does not ask anyone to resolve conflicts.
 
 Do not export a private file format that only this app can read. The Git repository is the portable form of a user.
 

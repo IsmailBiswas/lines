@@ -44,7 +44,7 @@ The point is local control. Each user's data is a Git repository they can keep o
 - Show Draft as its own version. Keep editing it by amending that commit. Save asks for a name and finishes the version. Switch and quit write Draft. Delete Draft drops that commit and returns to the finished version it came from.
 - Export the current document as a PDF.
 - Export the open user as a real Git repository folder. Importing that folder, or any other Git repository, adds or opens a user. It does not merge into the user who is already open.
-- From Settings, set a remote on the open user with a private repository URL and a token. The token is stored in the app catalog, not in that user's Git repository. Sync uses the token to pull (fast-forward only) and then push. It does not merge.
+- From Settings, set a remote on the open user with a private repository URL and a token. The token is stored in the app catalog, not in that user's Git repository. Sync pulls (fast-forward when possible), keeps a displaced remote tip as an extra version ref when the tip moved from an older version, then pushes every variant and those refs. It does not merge.
 
 ## What v1 does not include
 
@@ -125,7 +125,7 @@ These replace the earlier assumption list.
 - Creating a user runs `git init` in a new folder. Export copies that repository, `.git` included. Import accepts only a real Git repository.
 - Switching user writes any Draft work on the current user first, then opens the other repository. The two users stay separate.
 - Opening a remote as import means cloning that whole Git repository as a user. v1 does not merge two histories or resolve conflicts.
-- Sync on an open user pulls with a fast-forward only, then pushes, using the stored token. If the remote has diverged, say so and leave the local user as it is. Do not merge or ask anyone to resolve conflicts.
+- Sync on an open user pulls, then pushes, using the stored token. When a version was created from an older version on the same variant, Sync keeps the previous tip as an extra version ref and updates the remote tip to match local so no version is lost. It does not merge or ask anyone to resolve conflicts.
 
 ## Success for v1
 

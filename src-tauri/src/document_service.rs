@@ -93,6 +93,8 @@ pub fn workspace_from_user(
     preferred_tab: Option<&str>,
 ) -> AppResult<Workspace> {
     let repo = git_service::open_repository(std::path::Path::new(&user.path))?;
+    // Clones only create a local branch for the default remote head. Restore the rest.
+    let _ = git_service::ensure_local_branches_from_remotes(&repo);
     let branches = git_service::list_branches(&repo)?;
     let variants: Vec<Variant> = branches
         .iter()

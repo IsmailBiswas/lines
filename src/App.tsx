@@ -329,10 +329,11 @@ export default function App() {
   }
 
   async function handleImportUserRemote() {
-    await run(() => api.importUserRemote(userName, remoteUrl), () => {
+    await run(() => api.importUserRemote(userName, remoteUrl, remoteToken), () => {
       setDialog(null);
       setUserName("");
       setRemoteUrl("");
+      setRemoteToken("");
     });
   }
 
@@ -481,7 +482,11 @@ export default function App() {
                     onSwitch={(id) => void handleSwitchUser(id)}
                     onRename={openRenameUser}
                     onCreate={() => setDialog("create-user")}
-                    onImport={() => setDialog("import-user")}
+                    onImport={() => {
+                      setRemoteUrl("");
+                      setRemoteToken("");
+                      setDialog("import-user");
+                    }}
                     onExport={() => void handleExportUser()}
                   />
                 </div>
@@ -633,7 +638,11 @@ export default function App() {
               primary="Create New User"
               onPrimary={() => setDialog("create-user")}
               secondary="Import Existing User"
-              onSecondary={() => setDialog("import-user")}
+              onSecondary={() => {
+                setRemoteUrl("");
+                setRemoteToken("");
+                setDialog("import-user");
+              }}
             />
           ) : noVariants ? (
             <EmptyState
@@ -719,8 +728,10 @@ export default function App() {
             onSubmit={(event) => {
               event.preventDefault();
               if (busy) return;
-              if (remoteUrl.trim()) void handleImportUserRemote();
-              else void handleImportUserLocal();
+              if (remoteUrl.trim()) {
+                if (!remoteToken.trim()) return;
+                void handleImportUserRemote();
+              } else void handleImportUserLocal();
             }}
           >
             <DialogHeader>
@@ -732,20 +743,35 @@ export default function App() {
               <Input id="import-user-name" value={userName} onChange={(event) => setUserName(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="remote-url">Remote, If You Have One</Label>
+              <Label htmlFor="remote-url">Repository URL</Label>
               <Input
                 id="remote-url"
                 value={remoteUrl}
                 onChange={(event) => setRemoteUrl(event.target.value)}
-                placeholder="https://..."
+                placeholder="https://github.com/you/resume.git"
               />
             </div>
+            {remoteUrl.trim() ? (
+              <div className="space-y-2">
+                <Label htmlFor="import-token">Token</Label>
+                <Input
+                  id="import-token"
+                  type="password"
+                  value={remoteToken}
+                  onChange={(event) => setRemoteToken(event.target.value)}
+                  placeholder="Personal access token"
+                />
+              </div>
+            ) : null}
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => void handleImportUserLocal()} disabled={busy}>
                 <Icons.importUser />
                 Local Folder
               </Button>
-              <Button type="submit" disabled={busy}>
+              <Button
+                type="submit"
+                disabled={busy || (Boolean(remoteUrl.trim()) && !remoteToken.trim())}
+              >
                 {remoteUrl.trim() ? "Import Remote" : "Import"}
               </Button>
             </div>

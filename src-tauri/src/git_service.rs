@@ -20,21 +20,71 @@ pub fn open_repository(path: &Path) -> AppResult<Repository> {
     Ok(Repository::open(path)?)
 }
 
-pub fn clone_repository(url: &str, path: &Path) -> AppResult<Repository> {
+pub fn clone_repository(url: &str, path: &Path, token: Option<&str>) -> AppResult<Repository> {
+    validate_https_remote_url(url)?;
+    let token = token
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| AppError::msg("Enter a token."))?;
+    if path.exists() {
+        let _ = fs::remove_dir_all(path);
+    }
     fs::create_dir_all(path)?;
-    let mut callbacks = RemoteCallbacks::new();
-    callbacks.credentials(|_url, username, allowed| {
-        if allowed.contains(git2::CredentialType::SSH_KEY) {
-            Cred::ssh_key_from_agent(username.unwrap_or("git"))
-        } else {
-            Cred::default()
-        }
-    });
     let mut fetch = FetchOptions::new();
-    fetch.remote_callbacks(callbacks);
+    fetch.remote_callbacks(remote_callbacks(Some(token)));
     let mut builder = git2::build::RepoBuilder::new();
     builder.fetch_options(fetch);
-    Ok(builder.clone(url, path)?)
+    let repo = match builder.clone(url, path) {
+        Ok(repo) => repo,
+        Err(error) => {
+            let _ = fs::remove_dir_all(path);
+            return Err(map_push_error(error));
+        }
+    };
+    prepare_remote_repository(&repo, Some(token))?;
+    Ok(repo)
+}
+
+/// Fetch remote heads and this app's refs, then create any missing local branches.
+pub fn prepare_remote_repository(repo: &Repository, token: Option<&str>) -> AppResult<()> {
+    fetch_remote_refs(repo, token)?;
+    ensure_local_branches_from_remotes(repo)
+}
+
+pub fn ensure_local_branches_from_remotes(repo: &Repository) -> AppResult<()> {
+    let remotes = repo.branches(Some(BranchType::Remote))?;
+    for (branch, _) in remotes.filter_map(Result::ok) {
+        let Some(name) = branch.name()? else {
+            continue;
+        };
+        let Some(short) = name.strip_prefix("origin/") else {
+            continue;
+        };
+        if short == "HEAD" {
+            continue;
+        }
+        if repo.find_branch(short, BranchType::Local).is_ok() {
+            continue;
+        }
+        let commit = branch.get().peel_to_commit()?;
+        repo.branch(short, &commit, false)?;
+    }
+    Ok(())
+}
+
+pub fn current_branch(repo: &Repository) -> AppResult<Option<String>> {
+    let head = match repo.head() {
+        Ok(head) => head,
+        Err(_) => return Ok(None),
+    };
+    if !head.is_branch() {
+        return Ok(None);
+    }
+    Ok(head.shorthand().map(|name| name.to_string()))
+}
+
+pub fn branch_tip_id(repo: &Repository, branch: &str) -> AppResult<String> {
+    Ok(branch_tip(repo, branch)?.to_string())
 }
 
 pub fn copy_repository(source: &Path, dest: &Path) -> AppResult<()> {
@@ -649,6 +699,16 @@ pub fn origin_url(repo: &Repository) -> Option<String> {
 }
 
 pub fn set_origin_url(repo: &Repository, url: &str) -> AppResult<()> {
+    validate_https_remote_url(url)?;
+    if repo.find_remote("origin").is_ok() {
+        repo.remote_set_url("origin", url)?;
+    } else {
+        repo.remote("origin", url)?;
+    }
+    Ok(())
+}
+
+fn validate_https_remote_url(url: &str) -> AppResult<()> {
     let url = url.trim();
     if url.is_empty() {
         return Err(AppError::msg("Enter a remote address."));
@@ -660,11 +720,6 @@ pub fn set_origin_url(repo: &Repository, url: &str) -> AppResult<()> {
         return Err(AppError::msg(
             "Use an HTTPS repository URL. Sync uses the token, not SSH.",
         ));
-    }
-    if repo.find_remote("origin").is_ok() {
-        repo.remote_set_url("origin", url)?;
-    } else {
-        repo.remote("origin", url)?;
     }
     Ok(())
 }
@@ -712,20 +767,8 @@ fn token_username(url: &str) -> &'static str {
 }
 
 pub fn pull_origin(repo: &Repository, token: Option<&str>) -> AppResult<()> {
-    let mut remote = repo.find_remote("origin").map_err(|_| {
-        AppError::msg("This user has no remote yet. Add one in Settings.")
-    })?;
-    let mut fetch = FetchOptions::new();
-    fetch.remote_callbacks(remote_callbacks(token));
-    match remote.fetch(
-        &["refs/heads/*:refs/remotes/origin/*"],
-        Some(&mut fetch),
-        None,
-    ) {
-        Ok(()) => {}
-        Err(error) if is_empty_remote(&error) => return Ok(()),
-        Err(error) => return Err(map_push_error(error)),
-    }
+    fetch_remote_refs(repo, token)?;
+    ensure_local_branches_from_remotes(repo)?;
     let remotes = repo.branches(Some(BranchType::Remote))?;
     for (branch, _) in remotes.filter_map(Result::ok) {
         let Some(name) = branch.name()? else {
@@ -741,6 +784,38 @@ pub fn pull_origin(repo: &Repository, token: Option<&str>) -> AppResult<()> {
         fast_forward_branch(repo, short, oid)?;
     }
     Ok(())
+}
+
+fn fetch_remote_refs(repo: &Repository, token: Option<&str>) -> AppResult<()> {
+    let mut remote = repo.find_remote("origin").map_err(|_| {
+        AppError::msg("This user has no remote yet. Add one in Settings.")
+    })?;
+    let mut fetch = FetchOptions::new();
+    fetch.remote_callbacks(remote_callbacks(token));
+    match remote.fetch(
+        &["refs/heads/*:refs/remotes/origin/*"],
+        Some(&mut fetch),
+        None,
+    ) {
+        Ok(()) => {}
+        Err(error) if is_empty_remote(&error) => {}
+        Err(error) => return Err(map_push_error(error)),
+    }
+    let mut fetch_rt = FetchOptions::new();
+    fetch_rt.remote_callbacks(remote_callbacks(token));
+    match remote.fetch(&["refs/rt/*:refs/rt/*"], Some(&mut fetch_rt), None) {
+        Ok(()) => {}
+        Err(error) if is_empty_remote(&error) || is_missing_refspec(&error) => {}
+        Err(error) => return Err(map_push_error(error)),
+    }
+    Ok(())
+}
+
+fn is_missing_refspec(error: &git2::Error) -> bool {
+    let text = error.message().to_lowercase();
+    text.contains("couldn't find remote ref")
+        || text.contains("not found")
+        || text.contains("no matching")
 }
 
 fn fast_forward_branch(repo: &Repository, branch: &str, remote_oid: Oid) -> AppResult<()> {
@@ -762,9 +837,10 @@ fn fast_forward_branch(repo: &Repository, branch: &str, remote_oid: Oid) -> AppR
             if repo.graph_descendant_of(local_oid, remote_oid)? {
                 return Ok(());
             }
-            Err(AppError::msg(
-                "The remote has other work. This app does not merge. Import that remote as another user.",
-            ))
+            // Tips diverged (often: version created from an older version). Keep the
+            // remote tip as an extra version so Sync can publish both without merge.
+            remember_extra_tip(repo, branch, remote_oid)?;
+            Ok(())
         }
         Err(_) => {
             let commit = repo.find_commit(remote_oid)?;
@@ -804,11 +880,35 @@ fn push_refspecs(repo: &Repository) -> AppResult<Vec<String>> {
         let Some(name) = reference.name() else {
             continue;
         };
-        if name.starts_with("refs/heads/") || name.starts_with("refs/rt/") {
+        if let Some(branch) = name.strip_prefix("refs/heads/") {
+            let force = needs_force_push(repo, branch, reference.target())?;
+            let prefix = if force { "+" } else { "" };
+            specs.push(format!("{prefix}{name}:{name}"));
+        } else if name.starts_with("refs/rt/") {
             specs.push(format!("{name}:{name}"));
         }
     }
     Ok(specs)
+}
+
+fn needs_force_push(repo: &Repository, branch: &str, local_oid: Option<Oid>) -> AppResult<bool> {
+    let Some(local_oid) = local_oid else {
+        return Ok(false);
+    };
+    let remote_name = format!("refs/remotes/origin/{branch}");
+    let Ok(remote_ref) = repo.find_reference(&remote_name) else {
+        return Ok(false);
+    };
+    let Some(remote_oid) = remote_ref.target() else {
+        return Ok(false);
+    };
+    if local_oid == remote_oid {
+        return Ok(false);
+    }
+    if repo.graph_descendant_of(local_oid, remote_oid)? {
+        return Ok(false);
+    }
+    Ok(true)
 }
 
 fn map_push_error(error: git2::Error) -> AppError {
@@ -828,7 +928,7 @@ fn map_push_error(error: git2::Error) -> AppError {
         || text.contains("updates were rejected")
     {
         return AppError::msg(
-            "The remote has other work. This app does not merge. Import that remote as another user.",
+            "The remote changed during Sync. Try Sync again. If it keeps failing, import that remote as another user.",
         );
     }
     AppError::msg(format!("Sync failed. {error}"))
@@ -865,6 +965,51 @@ mod tests {
             .join(format!("rt-git-test-{}", uuid::Uuid::new_v4()));
         let repo = init_repository(&dir).expect("init");
         TempRepo { dir, repo }
+    }
+
+    #[test]
+    fn sync_pull_keeps_diverged_remote_tip_as_extra() {
+        let temp = temp_repo();
+        let repo = &temp.repo;
+        let one = create_orphan_branch(&repo, "main", &resume("one"), "one", "tester").unwrap();
+        let two = create_named_version(&repo, "main", &one, &resume("two"), "tester", "two").unwrap();
+        let three =
+            create_named_version(&repo, "main", &two, &resume("three"), "tester", "three").unwrap();
+        let four =
+            create_named_version(&repo, "main", &two, &resume("four"), "tester", "four").unwrap();
+
+        write_working_files(repo, &resume("remote-only")).unwrap();
+        let sig = signature("tester").unwrap();
+        let tree_id = write_index_tree(repo).unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        let three_commit = repo
+            .find_commit(git2::Oid::from_str(&three).unwrap())
+            .unwrap();
+        let remote_only = repo
+            .commit(None, &sig, &sig, "remote-only", &tree, &[&three_commit])
+            .unwrap();
+
+        repo.reference(
+            "refs/remotes/origin/main",
+            remote_only,
+            true,
+            "test remote tip",
+        )
+        .unwrap();
+
+        fast_forward_branch(repo, "main", remote_only).unwrap();
+
+        let tip = branch_tip(repo, "main").unwrap();
+        assert_eq!(tip.to_string(), four);
+        let listed: Vec<String> = list_versions(repo, "main")
+            .unwrap()
+            .into_iter()
+            .map(|version| version.message)
+            .collect();
+        assert!(listed.contains(&"three".into()));
+        assert!(listed.contains(&"four".into()));
+        assert!(listed.contains(&"remote-only".into()));
+        assert!(needs_force_push(repo, "main", Some(tip)).unwrap());
     }
 
     #[test]
@@ -924,5 +1069,22 @@ mod tests {
         assert_eq!(listed[0].id, draft);
         assert_eq!(listed[0].parent_id.as_deref(), Some(one.as_str()));
         assert!(delete_unsaved(&repo, "other", &draft).is_err());
+    }
+
+    #[test]
+    fn ensure_local_branches_creates_missing_locals() {
+        let temp = temp_repo();
+        let repo = &temp.repo;
+        let one = create_orphan_branch(&repo, "main", &resume("one"), "one", "tester").unwrap();
+        let other =
+            create_named_version(&repo, "main", &one, &resume("two"), "tester", "two").unwrap();
+        let oid = git2::Oid::from_str(&other).unwrap();
+        repo.reference("refs/remotes/origin/feature", oid, true, "test remote")
+            .unwrap();
+        ensure_local_branches_from_remotes(&repo).unwrap();
+        assert!(repo.find_branch("feature", BranchType::Local).is_ok());
+        let listed = list_branches(&repo).unwrap();
+        assert!(listed.contains(&"feature".into()));
+        assert!(listed.contains(&"main".into()));
     }
 }

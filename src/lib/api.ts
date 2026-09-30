@@ -7,8 +7,8 @@ export const api = {
   renameUser: (id: string, name: string) => invoke<Workspace>("rename_user", { id, name }),
   importUserLocal: (name: string, path: string) =>
     invoke<Workspace>("import_user_local", { name, path }),
-  importUserRemote: (name: string, url: string) =>
-    invoke<Workspace>("import_user_remote", { name, url }),
+  importUserRemote: (name: string, url: string, token: string) =>
+    invoke<Workspace>("import_user_remote", { name, url, token }),
   switchUser: (id: string) => invoke<Workspace>("switch_user", { id }),
   exportUser: (dest: string) => invoke<string>("export_user", { dest }),
   createVariant: (name: string) => invoke<Workspace>("create_variant", { name }),

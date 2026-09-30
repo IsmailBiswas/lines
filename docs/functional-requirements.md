@@ -21,11 +21,11 @@ A user is a Git repository. A variant is a Git branch. A version is a Git commit
 - The person can switch to another known user.
 - The person can create a new user. That creates a new empty repository.
 - The person can import a local Git repository folder as a user. That folder must already be a Git repository, including one this app exported. If it is already a known user, open that user.
-- The person can import a remote Git repository as a user by cloning it.
+- The person can import a remote Git repository as a user by cloning it with an HTTPS URL and a token. Clone restores every remote variant as a local branch, keeps this app's variant refs, and stores the token for Sync.
 - Importing a repository does not merge it into the user who is already open.
 - The person can export the open user to a folder. That folder is a real Git repository and can be imported again as a user.
 - The person can set a remote on the open user from Settings by entering a private repository URL and a token. The token is stored with the catalog, not inside that user's Git repository.
-- Sync writes Draft if needed, then uses the token to pull (fast-forward only) and push. It does not merge. If the remote has diverged, the action fails and the local user is unchanged.
+- Sync writes Draft if needed, then uses the token to pull and push. Fast-forward when possible. When the tip moved because a version was created from an older version, keep the previous remote tip as an extra version ref and update the remote tip to match local so no version is lost. It does not merge.
 - Switching user writes Draft on the current user first. If that write fails, the app does not switch.
 
 ## Variants
@@ -103,7 +103,7 @@ These are product settings, not a junk drawer:
 - Theme, in Settings, not as a standalone header control.
 - The open user's remote address, stored as that repository's `origin`.
 - That user's remote token, stored in the catalog.
-- Sync, in Settings, which pulls (fast-forward) and pushes with that token.
+- Sync, in Settings, which pulls and pushes with that token, including publishing extra version refs when a tip moved from an older version.
 
 Do not add preference pages for things the interface can do directly.
 

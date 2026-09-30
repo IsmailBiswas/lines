@@ -129,7 +129,7 @@ It must be able to:
 - Export by copying the whole repository, including `.git`, to a chosen folder
 - Refuse to import a folder that is not a Git repository
 - Read and set `origin` on the open user
-- Pull remote heads with a fast-forward only, then push every variant and this app's internal refs to `origin`. Use the catalog token. Do not merge.
+- Pull remote heads: fast-forward when possible; when tips diverge (version created from an older version), keep the remote tip as `refs/rt/extra/...` and leave the local tip. Then push every variant and this app's internal refs to `origin`, forcing the branch tip when it is not a fast-forward of the remote tip. Use the catalog token. Do not merge.
 
 Product words stay in the frontend. This service can think in branch and commit.
 
@@ -160,7 +160,8 @@ Thin layer over catalog plus Git:
 
 - Create user: name → empty repo under a stable id → catalog row → open it
 - Rename user: update the catalog display name only
-- Import local or remote: path or URL → repo on disk → catalog row → open it
+- Import local or remote: path, or HTTPS URL plus token → clone → create local branches for every remote variant → fetch this app's refs → catalog row (token stored) → open the default variant
+- Sync pull also fetches this app's refs, creates missing local branches from remotes, and on tip divergence keeps the remote tip as an extra version ref
 - Export user: current repo → chosen folder
 - Switch user: write service first, then catalog switch, then load that repo
 

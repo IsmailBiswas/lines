@@ -57,9 +57,14 @@ pub fn import_user_local(app: AppHandle, name: String, path: String) -> AppResul
 }
 
 #[tauri::command]
-pub fn import_user_remote(app: AppHandle, name: String, url: String) -> AppResult<Workspace> {
+pub fn import_user_remote(
+    app: AppHandle,
+    name: String,
+    url: String,
+    token: String,
+) -> AppResult<Workspace> {
     let data = app_data(&app)?;
-    let (catalog, user) = user_service::import_remote(&data, &name, &url)?;
+    let (catalog, user) = user_service::import_remote(&data, &name, &url, &token)?;
     let users = user_service::summaries(&catalog);
     document_service::workspace_from_user(users, &user, None, None, None)
 }
@@ -196,9 +201,11 @@ pub fn open_version(app: AppHandle, version_id: String) -> AppResult<Workspace> 
         .clone()
         .ok_or_else(|| AppError::msg("No user is open."))?;
     let user = catalog::find_user(&catalog, &id)?.clone();
+    let repo = git_service::open_repository(PathBuf::from(&user.path).as_path())?;
     let variant = user
         .last_variant
         .clone()
+        .or_else(|| git_service::current_branch(&repo).ok().flatten())
         .ok_or_else(|| AppError::msg("No variant is open."))?;
     user_service::remember_place(&data, &id, Some(&variant), Some(&version_id), None)?;
     let catalog = catalog::load_catalog(&data)?;

@@ -277,9 +277,9 @@ flowchart TD
   save[Save remote and token]
   sync[User clicks Sync in Settings]
   write[Write Draft if the files differ]
-  pull[Pull with a fast-forward only]
-  push[Push this user to the remote]
-  fail[If the histories diverged, stay here and say so]
+  pull[Pull: fast-forward or keep remote tip as extra]
+  push[Push variants and extra refs; force tip when needed]
+  fail[If auth or the remote rejects, stay here and say so]
 
   settings --> theme
   settings --> remote --> create --> fields --> save
@@ -293,7 +293,8 @@ Rules for this path:
 
 - The token is stored in the catalog, never in the user's Git repository.
 - The remote URL is stored as `origin` on this user.
-- Sync writes first, then pulls (fast-forward only), then pushes.
+- Sync writes first, then pulls, then pushes.
+- Creating a version from an older version on the same variant keeps the previous tip as an extra ref locally and on the remote after Sync. The remote tip matches local. No version is dropped.
 - Sync stays reachable in a narrow window.
 
 ## Take the open user elsewhere

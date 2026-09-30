@@ -83,7 +83,12 @@ pub fn import_local(app_data: &Path, name: &str, source: &Path) -> AppResult<(Ca
     Ok((catalog, user))
 }
 
-pub fn import_remote(app_data: &Path, name: &str, url: &str) -> AppResult<(Catalog, UserRecord)> {
+pub fn import_remote(
+    app_data: &Path,
+    name: &str,
+    url: &str,
+    token: &str,
+) -> AppResult<(Catalog, UserRecord)> {
     let mut catalog = catalog::load_catalog(app_data)?;
     let name = if name.trim().is_empty() {
         url.rsplit('/')
@@ -94,19 +99,30 @@ pub fn import_remote(app_data: &Path, name: &str, url: &str) -> AppResult<(Catal
     } else {
         name.trim().to_string()
     };
+    let token = token.trim();
+    if token.is_empty() {
+        return Err(AppError::msg("Enter a token."));
+    }
     let id = Uuid::new_v4().to_string();
     let dest = catalog::users_root(app_data).join(&id);
-    git_service::clone_repository(url, &dest)?;
+    let repo = git_service::clone_repository(url, &dest, Some(token))?;
+    let branch = git_service::current_branch(&repo)?.unwrap_or_else(|| {
+        git_service::list_branches(&repo)
+            .ok()
+            .and_then(|names| names.into_iter().next())
+            .unwrap_or_else(|| "Base".into())
+    });
+    let version = git_service::branch_tip_id(&repo, &branch).ok();
     let user = UserRecord {
         id: id.clone(),
         name,
         path: dest.to_string_lossy().into_owned(),
-        last_variant: None,
-        last_version: None,
-        last_tab: None,
+        last_variant: Some(branch),
+        last_version: version,
+        last_tab: Some("resume".into()),
         pdf_folder: None,
         pdf_name_pattern: None,
-        remote_token: None,
+        remote_token: Some(token.to_string()),
     };
     catalog.users.push(user.clone());
     catalog.current_user_id = Some(id);
