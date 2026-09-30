@@ -12,9 +12,9 @@ Read these as a working reference, not as a presentation.
 | [Interface guidelines](interface-guidelines.md) | You are changing layout, type, theme, icons, or controls. |
 | [Technical implementation](technical-implementation.md) | You are building or splitting a major part of the app. |
 
-Also read:
+Also read in the repository root (not part of this site):
 
-- `../AGENTS.md` before changing the application.
-- `../draft.md` only as history. These documents override it.
+- [`AGENTS.md`](https://github.com/IsmailBiswas/lines/blob/main/AGENTS.md) before changing the application.
+- `draft.md` only as history. These documents override it.
 
 If you change product behavior, change the document that describes it in the same sitting.

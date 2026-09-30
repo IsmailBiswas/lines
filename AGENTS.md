@@ -62,7 +62,7 @@ Follow `docs/non-functional-requirements.md`.
 
 - Prefer clear names over clever names.
 - Keep product language stable: user, switch user, variant, version, draft, export, import. The UI label is Draft. The Git commit message stays `unsaved`.
-- Put product decisions in `docs/`, not only in chat or in comments.
+- Put product decisions in `docs/`, not only in chat or in comments. Those files are also the MkDocs site published to GitHub Pages.
 - Keep `draft.md` as the original sketch. Do not patch it into a second spec.
 - When a flow changes, update the mermaid in `docs/user-flows.md`.
 - When a major component changes, update `docs/technical-implementation.md`.

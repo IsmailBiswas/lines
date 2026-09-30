@@ -64,10 +64,11 @@ resume_tracker/
   draft.md                         Original notes. Keep them. Do not treat them as the live spec.
   README.md                        Short entry point.
   AGENTS.md                        Working rules for people and agents changing the app.
+  mkdocs.yml                       Docs site config (GitHub Pages).
   src/                             Web UI
   src-tauri/                       Rust backend
   docs/
-    README.md                      Map of these documents.
+    index.md                       Map of these documents (MkDocs home).
     project-initiation.md          This file.
     version-model.md               How Git maps to what the user sees.
     user-flows.md                  Main paths through the product.
@@ -77,7 +78,7 @@ resume_tracker/
     technical-implementation.md    How to build the major parts.
 ```
 
-When the app exists, keep product documents in `docs/` and put implementation in the usual Tauri layout (a frontend folder and a Rust backend folder). Do not bury product decisions inside code comments only.
+When the app exists, keep product documents in `docs/` and put implementation in the usual Tauri layout (a frontend folder and a Rust backend folder). Do not bury product decisions inside code comments only. The same `docs/` files are published with MkDocs to GitHub Pages.
 
 ## How a version is organized
 

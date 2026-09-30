@@ -1,0 +1,61 @@
+site_name: Resume Tracker
+site_description: Working reference for the Resume Tracker product and implementation.
+site_url: https://ismailbiswas.github.io/lines/
+repo_url: https://github.com/IsmailBiswas/lines
+repo_name: IsmailBiswas/lines
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+
+plugins:
+  - search
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Overview: index.md
+  - Project initiation: project-initiation.md
+  - Version model: version-model.md
+  - User flows: user-flows.md
+  - Functional requirements: functional-requirements.md
+  - Non-functional requirements: non-functional-requirements.md
+  - Interface guidelines: interface-guidelines.md
+  - Technical implementation: technical-implementation.md
