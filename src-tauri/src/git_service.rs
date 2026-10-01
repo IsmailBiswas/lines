@@ -643,7 +643,7 @@ fn is_unsaved(commit: &Commit) -> bool {
 
 fn signature(name: &str) -> AppResult<Signature<'static>> {
     let safe = if name.trim().is_empty() {
-        "Resume Tracker"
+        "lines"
     } else {
         name.trim()
     };

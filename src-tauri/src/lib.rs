@@ -50,5 +50,5 @@ pub fn run() {
             commands::downloads_dir,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Resume Tracker");
+        .expect("error while running lines");
 }

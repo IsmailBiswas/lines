@@ -1,12 +1,12 @@
 # Project initiation
 
-This is the starting reference for Resume Tracker. Read this first if you are coming back to the project, onboarding yourself again, or trying to understand how the pieces fit together.
+This is the starting reference for lines. Read this first if you are coming back to the project, onboarding yourself again, or trying to understand how the pieces fit together.
 
 These documents exist to keep the product consistent. They are not a pitch.
 
 ## What this is
 
-Resume Tracker is a desktop application for keeping versions of a resume, an optional cover letter, and any extra supporting documents the user adds.
+lines is a desktop application for keeping versions of a resume, an optional cover letter, and any extra supporting documents the user adds.
 
 It uses Git as the version system, not as a developer tool the person in front of the app has to learn. Three words do most of the work:
 

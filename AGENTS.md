@@ -1,6 +1,6 @@
 # Working rules
 
-This file is for anyone changing Resume Tracker, including an agent. The product documents in `docs/` are the source of truth for behavior. This file is the source of truth for how to work.
+This file is for anyone changing lines, including an agent. The product documents in `docs/` are the source of truth for behavior. This file is the source of truth for how to work.
 
 Read `docs/project-initiation.md` and `docs/version-model.md` before the first change in a session. Read `docs/technical-implementation.md` before adding a major component.
 

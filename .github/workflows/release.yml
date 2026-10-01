@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-tauri:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (Apple Silicon)
+            platform: macos-latest
+            args: --target aarch64-apple-darwin
+            rust_targets: aarch64-apple-darwin
+          - name: Linux (x64)
+            platform: ubuntu-22.04
+            args: ""
+            rust_targets: ""
+          - name: Windows (x64)
+            platform: windows-latest
+            args: ""
+            rust_targets: ""
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Sync version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
+            echo "Tag must look like v0.1.0 (got ${GITHUB_REF_NAME})"
+            exit 1
+          fi
+          python3 - <<PY
+          import json
+          from pathlib import Path
+
+          version = "${VERSION}"
+
+          pkg = Path("package.json")
+          data = json.loads(pkg.read_text())
+          data["version"] = version
+          pkg.write_text(json.dumps(data, indent=2) + "\n")
+
+          conf = Path("src-tauri/tauri.conf.json")
+          cfg = json.loads(conf.read_text())
+          cfg["version"] = version
+          conf.write_text(json.dumps(cfg, indent=2) + "\n")
+
+          cargo = Path("src-tauri/Cargo.toml")
+          lines = []
+          in_package = False
+          replaced = False
+          for line in cargo.read_text().splitlines(keepends=True):
+              if line.startswith("[package]"):
+                  in_package = True
+              elif line.startswith("[") and in_package:
+                  in_package = False
+              if in_package and line.startswith("version = ") and not replaced:
+                  lines.append(f'version = "{version}"\n')
+                  replaced = True
+              else:
+                  lines.append(line)
+          cargo.write_text("".join(lines))
+          print(f"Synced version to {version}")
+          PY
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and upload
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Minimum macOS setup (no Apple Developer cert): ad-hoc sign so downloads
+          # are not "damaged". Users still clear Gatekeeper once (Right-click → Open,
+          # or: xattr -cr /path/to/lines.app).
+          APPLE_SIGNING_IDENTITY: "-"
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('manual-{0}', github.run_id) }}
+          releaseName: ${{ github.ref_type == 'tag' && format('lines {0}', github.ref_name) || format('lines manual-{0}', github.run_id) }}
+          releaseBody: |
+            Desktop builds (unsigned / ad-hoc). No paid certificates required.
+
+            **macOS (Apple Silicon)** — Gatekeeper may block once. Right-click the app → Open → Open.
+            Or: `xattr -cr /Applications/lines.app`
+
+            **Windows** — SmartScreen may say Windows protected your PC. More info → Run anyway.
+
+            **Linux** — Make an AppImage executable (`chmod +x …AppImage`) and run it, or install the `.deb`. No quarantine UI like macOS/Windows; you may get a desktop “untrusted” prompt depending on the distro.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          uploadWorkflowArtifacts: true
