@@ -30,14 +30,17 @@ After the first deploy, enable **GitHub Pages** for the repo: Settings → Pages
 
 ## Releases
 
-Push a version tag to build desktop installers and attach them to a **draft** GitHub Release:
+Bump the app version, commit, push the current branch, and push a matching `v*` tag (starts Release CI):
 
 ```
-git tag v0.1.0
-git push origin v0.1.0
+./scripts/bump-version.sh --fix    # 0.1.0 -> 0.1.1
+./scripts/bump-version.sh --minor   # 0.1.0 -> 0.2.0
+./scripts/bump-version.sh --major   # 0.1.0 -> 1.0.0
 ```
 
-That runs `.github/workflows/release.yml` for macOS (Apple Silicon), Windows (x64), and Linux (x64). The tag version is synced into `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` for that build. Publish the draft when you are ready.
+The script keeps `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, and the git tag in sync. Working tree must be clean.
+
+That runs `.github/workflows/release.yml` for macOS (Apple Silicon), Windows (x64), and Linux (x64). Publish the draft GitHub Release when the jobs finish.
 
 No certificate secrets are required in GitHub for this path. Builds are meant to run with the normal OS warnings:
 

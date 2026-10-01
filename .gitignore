@@ -9,7 +9,6 @@ src-tauri/WixTools
 .vscode
 .idea
 draft.md
-src-tauri/icons
 site/
 .cache/
 .venv-docs/
