@@ -59,3 +59,4 @@ nav:
   - Non-functional requirements: non-functional-requirements.md
   - Interface guidelines: interface-guidelines.md
   - Technical implementation: technical-implementation.md
+  - Releasing and docs hosting: releasing-and-docs.md

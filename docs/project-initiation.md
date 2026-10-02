@@ -76,6 +76,7 @@ resume_tracker/
     non-functional-requirements.md How well it must do those things.
     interface-guidelines.md        Look, layout, and interaction rules.
     technical-implementation.md    How to build the major parts.
+    releasing-and-docs.md          Version bumps, Release CI, and MkDocs hosting.
 ```
 
 When the app exists, keep product documents in `docs/` and put implementation in the usual Tauri layout (a frontend folder and a Rust backend folder). Do not bury product decisions inside code comments only. The same `docs/` files are published with MkDocs to GitHub Pages.
